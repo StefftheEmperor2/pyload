@@ -101,7 +101,7 @@ SettingsUI = (function() {
         d = $(this).attr('id').split('|'), c = d[0], g = d[1];
         b = $(this).text();
         f = c === 'general' ? generalPanel : pluginPanel;
-        $.get( "/json/load_config?=" + c + ',' + g, function(e) {
+        $.get( "{{url_for('json.load_config')}}", {"category": c, "section": g}, function(e) {
                 f.html(e);
             });
     };

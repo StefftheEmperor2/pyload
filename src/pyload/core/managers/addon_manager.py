@@ -188,8 +188,14 @@ class AddonManager:
     def core_ready(self):
         for plugin in self.plugins:
             if plugin.is_activated():
-                plugin.core_ready()
-
+                try:
+                    plugin.core_ready()
+                except Exception as exc:
+                    self.pyload.log.error(
+                        self._("Failed plugin core_ready {}").format(plugin.classname),
+                        exc_info=self.pyload.debug > 1,
+                        stack_info=self.pyload.debug > 2,
+                    )
         self.dispatch_event("core_ready")
 
     @try_catch

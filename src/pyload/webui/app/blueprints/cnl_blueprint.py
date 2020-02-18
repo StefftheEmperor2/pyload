@@ -59,6 +59,8 @@ def add():
     else:
         api.generate_and_add_packages(urls, 0)
 
+    return 'success'
+
 
 @bp.route("/addcrypted", methods=["POST"], endpoint="addcrypted")
 @local_check

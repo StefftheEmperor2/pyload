@@ -61,8 +61,8 @@ class Perms(IntFlag):
 
 
 class Role(IntFlag):
-    ADMIN = 0  #: admin has all permissions implicit
-    USER = 1
+    ADMIN = 1  #: admin has all permissions implicit
+    USER = 2
 
 
 def has_permission(userperms, perms):
@@ -157,7 +157,7 @@ class Api:
             value = self.pyload.config[category][option]
         else:
             value = self.pyload.config.get_plugin(category, option)
-        return str(value)
+        return value
 
     @legacy("setConfigValue")
     @permission(Perms.SETTINGS)
@@ -365,7 +365,7 @@ class Api:
             "reconnect", "enabled"
         )
 
-    @legacy("statusDownloads")
+    @legacy("isTimeReconnect")
     @permission(Perms.LIST)
     def status_downloads(self):
         """
@@ -673,7 +673,8 @@ class Api:
 
     @legacy("deletePackages")
     @permission(Perms.DELETE)
-    def delete_packages(self, pids):
+    def delete_packages(self, **kwargs):
+        pids = kwargs['ids'].values()
         """
         Deletes packages and containing links.
 
@@ -829,7 +830,8 @@ class Api:
 
     @legacy("restartPackage")
     @permission(Perms.MODIFY)
-    def restart_package(self, pid):
+    def restart_package(self, **kwargs):
+        pid = kwargs['id']
         """
         Restarts a package, resets every containing files.
 

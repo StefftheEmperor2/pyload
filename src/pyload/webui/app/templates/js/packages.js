@@ -68,7 +68,7 @@ var PackageUI = new Class({
         indicateLoad();
         new Request.JSON({
             method: 'get',
-            url: '/api/deleteFinished',
+            url: '/api/delete_finished',
             onSuccess: function(data) {
                 if (data.length > 0) {
                     window.location.reload()
@@ -86,7 +86,7 @@ var PackageUI = new Class({
         indicateLoad();
         new Request.JSON({
             method: 'get',
-            url: '/api/restartFailed',
+            url: '/api/restart_failed',
             onSuccess: function(data) {
                 this.packages.each(function(pack) {
                     pack.close();
@@ -225,7 +225,7 @@ var Package = new Class({
             imgs[0].addEvent('click', function(e) {
                 new Request({
                     method: 'get',
-                    url: '/api/deleteFiles/[' + this.id + ']',
+                    url: '/api/delete_files?id=' + this.id,
                     onSuccess: function() {
                         $('file_' + this).nix()
                     }.bind(this),
@@ -302,7 +302,7 @@ var Package = new Class({
         indicateLoad();
         new Request({
             method: 'get',
-            url: '/json/move_package/' + ((this.ui.type + 1) % 2) + "/" + this.id,
+            url: '/json/move_package?target=' + ((this.ui.type + 1) % 2) + "&id=" + this.id,
             onSuccess: function() {
                 this.ele.nix();
                 indicateFinish();

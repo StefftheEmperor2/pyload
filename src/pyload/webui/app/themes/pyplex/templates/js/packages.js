@@ -1,17 +1,23 @@
 {% autoescape true %}
 
-var root = this;
+$(function () {
+    $('#package-list').each(function () {
+        var $elem = $(this),
+            pUI = $elem.data('pUI');
 
-function() {
-    var pUI = new PackageUI("url", {{target}});
-}
+        if ( ! pUI)
+        {
+            pUI = new PackageUI($elem.data('target'));
+            $elem.data('pUI', pUI);
+        }
 
-function PackageUI (url, type){
+    });
+});
+function PackageUI (type){
     var packages = [];
     var thisObject;
-    this.initialize = function(url, type) {
+    this.initialize = function(type) {
         thisObject = this;
-        this.url = url;
         this.type = type;
 
         $("#del_finished").click(this.deleteFinished);
@@ -23,7 +29,8 @@ function PackageUI (url, type){
     this.parsePackages = function () {
        var $packageList = $("#package-list");
        $packageList.children("li").each(function(ele) {
-            var id = this.id.match(/[0-9]+/);
+            var match = this.id.match(/[0-9]+/), id;
+            id = match[0];
             packages.push(new Package(thisObject, id, this));
         });
         $packageList.sortable({
@@ -40,9 +47,10 @@ function PackageUI (url, type){
                 if (newIndex === oldIndex) {
                     return false;
                 }
-                var order = ui.item.data('pid') + '|' + newIndex;
+                var id = ui.item.data('pid');
+                var order = newIndex;
                 indicateLoad();
-                $.get("/json/package_order?=" + order, function () {
+                $.get("/json/package_order", {"id": id, "order": order}, function () {
                     indicateFinish();
                     return true;
                 }).fail(function () {
@@ -55,7 +63,7 @@ function PackageUI (url, type){
 
     this.deleteFinished = function () {
         indicateLoad();
-        $.get("/api/deleteFinished", function(data) {
+        $.get("/api/delete_finished", function(data) {
             if (data.length > 0) {
                 window.location.reload();
             } else {
@@ -71,7 +79,7 @@ function PackageUI (url, type){
 
     this.restartFailed = function () {
         indicateLoad();
-        $.get("/api/restartFailed", function(data) {
+        $.get("/api/restart_failed", function(data) {
             if (data.length > 0) {
                 $.each(packages,function(pack) {
                     this.close();
@@ -83,7 +91,7 @@ function PackageUI (url, type){
         });
     };
 
-    this.initialize(url, type);
+    this.initialize(type);
 }
 
 function Package (ui, id, ele){
@@ -140,7 +148,7 @@ function Package (ui, id, ele){
 
     this.loadLinks = function () {
         indicateLoad();
-        $.get("/json/package?=" + id, thisObject.createLinks)
+        $.get("/json/package", {"id": id}, thisObject.createLinks)
         .fail(function () {
             indicateFail();
             return false;
@@ -208,7 +216,7 @@ function Package (ui, id, ele){
             var lid = $(this).find('.child').attr('id').match(/[0-9]+/);
             var imgs = $(this).find('.child_secrow span');
             $(imgs[3]).bind('click',{ lid: lid}, function(e) {
-                $.get("/api/deleteFiles?=" + lid, function () {
+                $.get("/api/delete_files", {"lid": lid}, function () {
                     $('#file_' + lid).remove()
                 }).fail(function () {
                     indicateFail();
@@ -216,7 +224,7 @@ function Package (ui, id, ele){
             });
 
             $(imgs[4]).bind('click',{ lid: lid},function(e) {
-                $.get("/api/restartFile?=" + lid, function () {
+                $.get("/api/restart_file", {"lid": lid}, function () {
                     var ele1 = $('#file_' + lid);
                     var imgs1 = $(ele1).find(".glyphicon");
                     $(imgs1[0]).attr( "class","glyphicon glyphicon-time text-info");
@@ -246,7 +254,7 @@ function Package (ui, id, ele){
                 }
                 var order = ui.item.data('lid') + '|' + newIndex;
                 indicateLoad();
-                $.get("/json/link_order?=" + order, function () {
+                $.get("/json/link_order", {"order": order}, function () {
                     indicateFinish();
                     return true;
                 } ).fail(function () {
@@ -279,7 +287,7 @@ function Package (ui, id, ele){
 
     this.deletePackage = function(event) {
         indicateLoad();
-        $.get("/api/deletePackages?=" + id, function () {
+        $.get("/api/delete_packages", {"ids": [id]}, function () {
             $(ele).remove();
             indicateFinish();
         }).fail(function () {
@@ -292,7 +300,7 @@ function Package (ui, id, ele){
 
     this.restartPackage = function(event) {
         indicateLoad();
-        $.get("/api/restartPackage?=" + id, function () {
+        $.get("/api/restart_package", {"id": id}, function () {
             thisObject.close();
             indicateSuccess();
         }).fail(function () {
@@ -317,7 +325,7 @@ function Package (ui, id, ele){
 
     this.movePackage = function(event) {
         indicateLoad();
-        $.get("/json/move_package?=" + ((ui.type + 1) % 2) + "," + id, function () {
+        $.get("/json/move_package", {"target": ((ui.type + 1) % 2), "id": id}, function () {
             $(ele).remove();
             indicateFinish();
         }).fail(function () {
@@ -329,11 +337,11 @@ function Package (ui, id, ele){
 
     this.editOrder = function(event) {
         indicateLoad();
-        $.get("/json/package?=" + id, function(data){
+        $.get("/json/package", {"id": id}, function(data){
             length = data.links.length;
             for (i = 1; i <= length/2; i++){
                 order = data.links[length-i].fid + '|' + (i-1);
-                $.get("/json/link_order?=" + order).fail(function () {
+                $.get("/json/link_order", {"order": order}).fail(function () {
                     indicateFail();
                 });
             }

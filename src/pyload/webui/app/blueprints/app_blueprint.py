@@ -156,6 +156,9 @@ def files():
 
     return render_template("files.html", files=data)
 
+@bp.route('/js/packages.js', endpoint="packages_js")
+def packages_js():
+    render_template('js/packages.js', target=flask.request.args['target'])
 
 @bp.route("/files/get/<filename>", endpoint="get_file")
 @login_required("DOWNLOAD")

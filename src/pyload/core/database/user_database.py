@@ -7,6 +7,7 @@ from hashlib import sha1
 
 from .database_thread import DatabaseThread, style
 
+from pyload.core.api import Role
 
 # TODO: move to utils and rewrite to use argon2_cffi
 def _salted_password(password, salt):
@@ -51,7 +52,7 @@ class UserDatabaseMethods:
             self.c.execute("UPDATE users SET password=? WHERE name=?", (salt_pw, user))
         else:
             self.c.execute(
-                "INSERT INTO users (name, password) VALUES (?, ?)", (user, salt_pw)
+                "INSERT INTO users (name, password, role) VALUES (?, ?, ?)", (user, salt_pw, Role.ADMIN)
             )
 
     @style.queue

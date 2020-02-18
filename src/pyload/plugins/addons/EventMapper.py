@@ -11,14 +11,14 @@ class EventMapper(BaseAddon):
 
     __pyload_version__ = "0.5"
 
-    __config__ = [("enabled", "bool", "Activated", True)]
+    __config__ = [("enabled", "bool", "Activated", False)]
 
     __description__ = """Map old events to new events"""
     __license__ = "GPLv3"
     __authors__ = [("Walter Purcaro", "vuolter@gmail.com")]
 
     def activate(self, *args):
-        self.m.dispatch_event("activate", *args)
+            self.m.dispatch_event("activate", *args)
 
     def exit(self, *args):
         self.m.dispatch_event("exit", *args)

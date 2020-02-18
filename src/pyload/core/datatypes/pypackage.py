@@ -72,3 +72,9 @@ class PyPackage:
     def notify_change(self):
         e = UpdateEvent("pack", self.id, "collector" if not self.queue else "queue")
         self.m.pyload.event_manager.add_event(e)
+
+    def __setattr__(self, key, value):
+        if key == "folder":
+            self._folder = value
+        else:
+            super(PyPackage, self).__setattr__(key, value)

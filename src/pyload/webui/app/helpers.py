@@ -8,6 +8,7 @@ import flask
 import flask_themes2
 
 from pyload.core.api import Perms, Role, has_permission
+import re
 
 
 class JSONEncoder(flask.json.JSONEncoder):
@@ -195,3 +196,22 @@ def login_required(perm):
         return wrapper
 
     return decorator
+
+
+def parse_query(data, key, value):
+    prog = re.compile('^([a-zA-Z0-9_\-]*)\[(a-zA-Z0-9_\-)*\](.*)$')
+    match = prog.match(key)
+    if match:
+        if match.group(3) is None and match.group(2) is not None:
+            data[match.group(1)] = {match.group(2): value}
+        elif match.group(2) is None:
+            if match.group(1) not in data:
+                data[match.group(1)] = {0: value}
+            else:
+                data[match.group(1)][len(data)] = {0: value}
+        else:
+            data[match.group(1)].append({match.group(2): parse_query({}, match.group(3), value)})
+    else:
+        data[key] = value
+
+    return data

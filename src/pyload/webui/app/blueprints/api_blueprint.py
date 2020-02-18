@@ -9,7 +9,7 @@ from urllib.parse import unquote
 import flask
 from flask.json import jsonify
 
-from ..helpers import clear_session, login_required, set_session
+from ..helpers import clear_session, login_required, set_session, parse_query
 
 bp = flask.Blueprint("api", __name__, url_prefix="/api")
 
@@ -21,18 +21,21 @@ bp = flask.Blueprint("api", __name__, url_prefix="/api")
 @bp.route("/<func>", methods=["GET", "POST"], endpoint="rpc")
 @bp.route("/<func>?=<args>", methods=["GET", "POST"], endpoint="rpc")
 # @apiver_check
-def rpc(func, args=""):
+def rpc(func, args=None):
 
     api = flask.current_app.config["PYLOAD_API"]
     s = flask.session
     if not api.is_authorized(func, {"role": s["role"], "permission": s["perms"]}):
         return "Unauthorized", 401
 
-    args = args.split(",")
+    if args is None:
+        args = []
+    else:
+        args = args.split(",")
     kwargs = {}
 
     for x, y in chain(flask.request.args.items(), flask.request.form.items()):
-        kwargs[x] = unquote(y)
+        kwargs = parse_query(kwargs, x, y)
 
     try:
         response = call_api(func, *args, **kwargs)
@@ -50,8 +53,8 @@ def call_api(func, *args, **kwargs):
         return "Forbidden", 403
 
     result = getattr(api, func)(
-        *[literal_eval(x) for x in args],
-        **{x: literal_eval(y) for x, y in kwargs.items()},
+        *args,
+        **kwargs
     )
 
     # null is invalid json response

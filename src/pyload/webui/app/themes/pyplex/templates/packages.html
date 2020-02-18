@@ -23,7 +23,7 @@
 <!-- {% block subtitle %}{{name}}{% endblock %} -->
 
 {% block content %}
-<ul id="package-list" style="list-style: none; padding-left: 0; margin-top: -10px;">
+<ul id="package-list" data-target="{{target}}" style="list-style: none; padding-left: 0; margin-top: -10px;">
 {% for package in content %}
     <li id="package_{{package.pid}}" class="left width100">
       <div class="left width100">

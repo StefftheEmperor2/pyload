@@ -8,7 +8,7 @@ from flask.json import jsonify
 
 from pyload.core.utils import format
 
-from ..helpers import login_required, render_template
+from ..helpers import login_required, render_template, parse_query
 
 bp = flask.Blueprint("json", __name__, url_prefix="/json")
 
@@ -82,11 +82,16 @@ def packages():
     return jsonify(False)
 
 
-@bp.route("/package?=<int:id>", endpoint="package")
+@bp.route("/package", endpoint="package")
 # @apiver_check
 @login_required("LIST")
-def package(id):
+def package():
     api = flask.current_app.config["PYLOAD_API"]
+    request_data = {}
+    for key, value in flask.request.args.items():
+        request_data = parse_query(request_data, key, value)
+
+    id = request_data['id']
     try:
         data = api.get_package_data(id)
         for pyfile in data["links"]:
@@ -119,13 +124,14 @@ def package(id):
 
 
 # NOTE: 'ids' is a string
-@bp.route("/package_order?=<ids>", endpoint="package_order")
+@bp.route("/package_order", endpoint="package_order")
 # @apiver_check
 @login_required("ADD")
-def package_order(ids):
+def package_order():
     api = flask.current_app.config["PYLOAD_API"]
     try:
-        pid, pos = ids.split(",")
+        pid = flask.request.args['id']
+        pos = flask.request.args['order']
         api.order_package(int(pid), int(pos))
         return jsonify(response="success")
     except Exception:
@@ -134,7 +140,7 @@ def package_order(ids):
     return jsonify(False)
 
 
-@bp.route("/abort_link?=<int:id>", endpoint="abort_link")
+@bp.route("/abort_link", endpoint="abort_link")
 # @apiver_check
 @login_required("DELETE")
 def abort_link(id):
@@ -149,7 +155,7 @@ def abort_link(id):
 
 
 # NOTE: 'ids' is a string
-@bp.route("/link_order?=<ids>", endpoint="link_order")
+@bp.route("/link_order", endpoint="link_order")
 # @apiver_check
 @login_required("ADD")
 def link_order(ids):
@@ -199,11 +205,13 @@ def add_package():
     return jsonify(True)
 
 
-@bp.route("/move_package?=<int:dest>,<int:id>", endpoint="move_package")
+@bp.route("/move_package", endpoint="move_package")
 # @apiver_check
 @login_required("MODIFY")
-def move_package(dest, id):
+def move_package():
     api = flask.current_app.config["PYLOAD_API"]
+    dest = int(flask.request.args['target'])
+    id = int(flask.request.args['id'])
     try:
         api.move_package(dest, id)
         return jsonify(response="success")
@@ -260,12 +268,14 @@ def set_captcha():
     return jsonify(data)
 
 
-@bp.route("/load_config?=<category>,<section>", endpoint="load_config")
+@bp.route("/load_config", endpoint="load_config")
 # @apiver_check
 @login_required("SETTINGS")
-def load_config(category, section):
+def load_config():
     conf = None
     api = flask.current_app.config["PYLOAD_API"]
+    category = flask.request.args.get('category')
+    section = flask.request.args.get('section')
     if category == "general":
         conf = api.get_config_dict()
     elif category == "plugin":
@@ -278,15 +288,19 @@ def load_config(category, section):
         if ";" in option["type"]:
             option["list"] = option["type"].split(";")
 
-    return render_template("settings_item.html", skey=section, section=conf[section])
+    return render_template("settings_item.html", category=category, skey=section, section=conf[section])
 
 
-@bp.route("/save_config?=<category>", methods=["POST"], endpoint="save_config")
+@bp.route("/save_config", methods=["POST"], endpoint="save_config")
 # @apiver_check
 @login_required("SETTINGS")
-def save_config(category):
+def save_config():
     api = flask.current_app.config["PYLOAD_API"]
+    form_data = flask.request.form.items()
     for key, value in flask.request.form.items():
+        if key == 'category':
+            category = value
+            continue
         try:
             section, option = key.split("|")
         except Exception:
