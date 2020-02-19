@@ -7,15 +7,11 @@ from functools import wraps
 from urllib.parse import unquote
 
 import flask
-from cryptography.fernet import Fernet
 from flask.json import jsonify
-
-from pyload.core.utils.misc import eval_js
 
 from .app_blueprint import bp as app_bp
 
 bp = flask.Blueprint("flash", __name__, url_prefix="/flash")
-
 
 #: decorator
 def local_check(func):
@@ -89,35 +85,18 @@ def addcrypted():
 @bp.route("/addcrypted2", methods=["POST"], endpoint="addcrypted2")
 @local_check
 def addcrypted2():
+    api = flask.current_app.config["PYLOAD_API"]
     package = flask.request.form.get(
         "package", flask.request.form.get("source", flask.request.form.get("referer"))
     )
-    crypted = flask.request.form["crypted"]
+    encrypted = flask.request.form["crypted"]
     jk = flask.request.form["jk"]
 
-    crypted = standard_b64decode(unquote(crypted.replace(" ", "+")))
-    jk = eval_js(f"{jk} f()")
+    encrypted_decoded = unquote(encrypted.replace(" ", "+"))
 
-    try:
-        key = bytes.fromhex(jk)
-    except Exception:
-        return "Could not decrypt key", 500
+    api.addcrypted2(api=api, jk=jk, encrypted=encrypted_decoded, package=package)
 
-    obj = Fernet(key)
-    urls = obj.decrypt(crypted).replace("\x00", "").replace("\r", "").split("\n")
-    urls = [url for url in urls if url.strip()]
-
-    api = flask.current_app.config["PYLOAD_API"]
-    try:
-        if package:
-            api.add_package(package, urls, 0)
-        else:
-            api.generate_and_add_packages(urls, 0)
-    except Exception:
-        return "failed can't add", 500
-    else:
-        return "success\r\n"
-
+    return 'success'
 
 @app_bp.route("/flashgot", methods=["POST"], endpoint="flashgot")
 @app_bp.route("/flashgot_pyload", methods=["POST"], endpoint="flashgot")

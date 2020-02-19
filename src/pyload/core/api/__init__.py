@@ -19,14 +19,14 @@ from ..datatypes.pyfile import PyFile
 from ..network.request_factory import get_url
 from ..utils.old.packagetools import parse_names
 from ..utils import seconds, fs
-
+from ..utils.misc import eval_js, add_crypted2
 import json
 from enum import IntFlag
 
 from ..datatypes.exceptions import *
 from ..datatypes.enums import *
 from ..datatypes.data import *
-
+from threading import Lock
 # contains function names mapped to their permissions
 # unlisted functions are for admins only
 perm_map = {}
@@ -105,6 +105,7 @@ class Api:
     def __init__(self, core):
         self.pyload = core
         self._ = core._
+        self.thread_lock = Lock()
 
     def _convert_py_file(self, p):
         f = FileData(
@@ -1401,3 +1402,13 @@ class Api:
     def set_user_permission(self, user, permission, role):
         self.pyload.db.set_permission(user, permission)
         self.pyload.db.set_role(user, role)
+
+    def addcrypted2(self, *args, api, jk, encrypted, package):
+        deferred = self.pyload.scheduler.get_deferred()
+
+        deferred.add_callback(add_crypted2, api=api, jk=jk, encrypted=encrypted, package=package)
+        result = self.pyload.scheduler.add_job(0, eval_js, [f"function() {{ {jk}; return f(); }}"],
+                                      threaded=False, deferred=deferred)
+
+        deferred.wait()
+        return str(deferred.result)

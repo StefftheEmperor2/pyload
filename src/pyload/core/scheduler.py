@@ -29,7 +29,11 @@ class Deferred:
         for f, cargs, ckwargs in self.call:
             args += tuple(cargs)
             kwargs.update(ckwargs)
-            f(*args ** kwargs)
+            f(*args, **kwargs)
+
+    def wait(self):
+        while not self.result:
+            time.sleep(0.1)
 
 
 class Scheduler:
@@ -38,12 +42,17 @@ class Scheduler:
         self._ = core._
         self.queue = PriorityQueue()
 
-    def add_job(self, t, call, args=[], kwargs={}, threaded=True):
-        d = Deferred()
+    def add_job(self, t, call, args=[], kwargs={}, threaded=True, deferred=None):
+        if deferred is None:
+            deferred = Deferred()
+
         t += time.time()
-        j = Job(t, call, args, kwargs, d, threaded)
+        j = Job(t, call, args, kwargs, deferred, threaded)
         self.queue.put((t, j))
-        return d
+        return deferred
+
+    def get_deferred(self):
+        return Deferred()
 
     def remove_job(self, d):
         """
