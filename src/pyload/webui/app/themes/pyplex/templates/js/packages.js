@@ -159,7 +159,7 @@ function Package (ui, id, ele){
     };
 
     this.createLinks = function(data) {
-        var ul = $("#sort_children_" + id[0]);
+        var ul = $("#sort_children_" + id);
         ul.html("");
         $.each(data.links, function(key, link) {      // data.links.each(
             link.id = link.fid;
@@ -212,11 +212,16 @@ function Package (ui, id, ele){
     };
 
     this.registerLinkEvents = function () {
-        $(ele).find('.children').children('ul').children("li").each(function(child) {
-            var lid = $(this).find('.child').attr('id').match(/[0-9]+/);
+        $(ele).find('.children').children('ul').children("li").each(function(child)
+        {
+            var lid, lid_match = $(this).find('.child').attr('id').match(/[0-9]+/);
+            if (lid_match)
+            {
+                lid = lid_match[0];
+            }
             var imgs = $(this).find('.child_secrow span');
             $(imgs[3]).bind('click',{ lid: lid}, function(e) {
-                $.get("/api/delete_files", {"lid": lid}, function () {
+                $.get("/api/delete_files", {"fids": [lid]}, function () {
                     $('#file_' + lid).remove()
                 }).fail(function () {
                     indicateFail();
@@ -246,15 +251,14 @@ function Package (ui, id, ele){
                 $(this).attr('data-previndex', ui.item.index());
             },
             stop: function(event, ui) {
-                var newIndex = ui.item.index();
-                var oldIndex = $(this).attr('data-previndex');
+                var new_index = ui.item.index();
+                var old_index = $(this).attr('data-previndex');
                 $(this).removeAttr('data-previndex');
-                if (newIndex === oldIndex) {
+                if (new_index === old_index) {
                     return false;
                 }
-                var order = ui.item.data('lid') + '|' + newIndex;
                 indicateLoad();
-                $.get("/json/link_order", {"order": order}, function () {
+                $.get("/json/link_order", {"lid": ui.item.data('lid'), "new_index": new_index}, function () {
                     indicateFinish();
                     return true;
                 } ).fail(function () {

@@ -6,8 +6,8 @@ import socket
 import string
 
 import requests_html
-from binascii import unhexlify
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 import base64
 
 def random_string(length):
@@ -54,45 +54,22 @@ def forward(source, destination, buffering=1024):
     finally:
         destination.shutdown(socket.SHUT_WR)
 
+def aes_decrypt(key, encrypted):
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(key), modes.CBC(key), backend=backend)
+    decryptor = cipher.decryptor()
+    decrypted = decryptor.update(encrypted) + decryptor.finalize()
+    return decrypted.decode('utf-8')
+
 
 def add_crypted2(js_key, *args, api, jk, encrypted, package):
-    from hashlib import md5
-    from base64 import b64decode
-    from base64 import b64encode
 
-    from Crypto.Cipher import AES
-    from Crypto.Random import get_random_bytes
-    from Crypto.Util.Padding import pad, unpad
-
-    class AESCipher:
-        def __init__(self, key):
-            self.key = md5(key.encode('utf8')).digest()
-
-        def encrypt(self, data):
-            iv = get_random_bytes(AES.block_size)
-            self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
-            return b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'),
-                                                          AES.block_size)))
-
-        def decrypt(self, data):
-            raw = b64decode(data)
-            self.cipher = AES.new(self.key, AES.MODE_CBC, raw[:AES.block_size])
-            return unpad(self.cipher.decrypt(raw[AES.block_size:]), AES.block_size)
-
-    def gen_key(key):
-        offset = 0
-        return_key = bytearray(key)
-        while len(return_key) < 32:
-            return_key.append(return_key[offset % len(key)])
-            offset += 1
-
-        return return_key
 
     try:
-        key = base64.urlsafe_b64encode(gen_key(base64.b16decode(js_key)))
+        key_decoded = base64.b16decode(js_key)
 
-        obj = Fernet(key)
-        urls = obj.decrypt(encrypted).replace("\x00", "").replace("\r", "").split("\n")
+        decrypted = aes_decrypt(key_decoded, base64.b64decode(encrypted))
+        urls = decrypted.replace("\x00", "").replace("\r", "").split("\n")
     except Exception as exc:
         return f"Could not decrypt key {exc}", 500
 

@@ -7,6 +7,7 @@ from functools import wraps
 from urllib.parse import unquote
 
 import flask
+from cryptography.fernet import Fernet
 from flask.json import jsonify
 
 from .app_blueprint import bp as app_bp

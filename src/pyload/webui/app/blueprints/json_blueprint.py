@@ -94,30 +94,19 @@ def package():
     id = request_data['id']
     try:
         data = api.get_package_data(id)
-        for pyfile in data["links"]:
-            if pyfile["status"] == 0:
-                pyfile["icon"] = "status_finished.png"
-            elif pyfile["status"] in (2, 3):
-                pyfile["icon"] = "status_queue.png"
-            elif pyfile["status"] in (9, 1):
-                pyfile["icon"] = "status_offline.png"
-            elif pyfile["status"] == 5:
-                pyfile["icon"] = "status_waiting.png"
-            elif pyfile["status"] == 8:
-                pyfile["icon"] = "status_failed.png"
-            elif pyfile["status"] == 4:
-                pyfile["icon"] = "arrow_right.png"
-            elif pyfile["status"] in (11, 13):
-                pyfile["icon"] = "status_proc.png"
-            else:
-                pyfile["icon"] = "status_downloading.png"
 
         tmp = data["links"]
         tmp.sort(key=lambda entry: entry["order"])
-        data["links"] = tmp
+
+        links_data = []
+        for link_item in tmp:
+            link_data = dict(link_item)
+            del link_data['format_size']
+            links_data.append(link_data)
+        data["links"] = links_data
         return jsonify(data)
 
-    except Exception:
+    except Exception as e:
         flask.abort(500)
 
     return jsonify(False)
@@ -158,10 +147,11 @@ def abort_link(id):
 @bp.route("/link_order", endpoint="link_order")
 # @apiver_check
 @login_required("ADD")
-def link_order(ids):
+def link_order():
     api = flask.current_app.config["PYLOAD_API"]
     try:
-        pid, pos = ids.split(",")
+        pid = flask.request.args['lid']
+        pos = flask.request.args['new_index']
         api.order_file(int(pid), int(pos))
         return jsonify(response="success")
     except Exception:

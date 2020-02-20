@@ -661,7 +661,7 @@ class Api:
 
     @legacy("deleteFiles")
     @permission(Perms.DELETE)
-    def delete_files(self, fids):
+    def delete_files(self, *args, fids):
         """
         Deletes several file entries from pyload.
 
@@ -842,13 +842,13 @@ class Api:
 
     @legacy("restartFile")
     @permission(Perms.MODIFY)
-    def restart_file(self, fid):
+    def restart_file(self, *args, lid):
         """
         Resets file status, so it will be downloaded again.
 
-        :param fid:  file id
+        :param lid:  file id
         """
-        self.pyload.files.restart_file(int(fid))
+        self.pyload.files.restart_file(int(lid))
 
     @legacy("recheckPackage")
     @permission(Perms.MODIFY)
