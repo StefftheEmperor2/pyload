@@ -17,7 +17,7 @@ class TurbobitNet(SimpleDownloader):
 
     __pyload_version__ = "0.5"
 
-    __pattern__ = r"http://(?:www\.)?turbobit\.net/(?:download/free/)?(?P<ID>\w+)"
+    __pattern__ = r"http(?:s)?://(?:www\.)?(?:turbobit\.net|turbo.to)/(?:download/free/)?(?P<ID>\w+)"
     __config__ = [
         ("enabled", "bool", "Activated", True),
         ("use_premium", "bool", "Use premium account if available", True),

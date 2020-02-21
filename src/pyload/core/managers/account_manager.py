@@ -48,9 +48,10 @@ class AccountManager:
         """
         if plugin in self.accounts:
             if plugin not in self.plugins:
-                self.plugins[plugin] = self.pyload.plugin_manager.load_class(
+                plugin_class = self.pyload.plugin_manager.load_class(
                     "account", plugin
-                )(self, self.accounts[plugin])
+                )
+                self.plugins[plugin] = plugin_class(self, self.accounts[plugin])
 
             return self.plugins[plugin]
         else:

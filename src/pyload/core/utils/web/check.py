@@ -11,26 +11,34 @@ import requests
 from ..convert import to_str
 from . import format
 from .convert import splitaddress
+from socket import inet_aton, inet_pton, error as socket_error, AF_INET, AF_INET6
 
 
-# def is_ipv4(value):
-    # try:
-        # validators.ipv4(value)
-    # except validators.ValidationFailure:
-        # return False
-    # return True
+def is_ipv4(address):
+    try:
+        inet_pton(AF_INET, address)
+    except AttributeError:  # no inet_pton here, sorry
+        try:
+            inet_aton(address)
+        except socket_error:
+            return False
+        return address.count('.') == 3
+    except socket_error:  # not a valid address
+        return False
+
+    return True
 
 
-# def is_ipv6(value):
-    # try:
-        # validators.ipv6(value)
-    # except validators.ValidationFailure:
-        # return False
-    # return True
+def is_ipv6(address):
+    try:
+        inet_pton(AF_INET6, address)
+    except socket_error:  # not a valid address
+        return False
+    return True
 
 
-# def is_ip(value):
-    # return is_ipv4(value) or is_ipv6(value)
+def is_ip(value):
+    return is_ipv4(value) or is_ipv6(value)
 
 
 def is_port(value):
@@ -55,8 +63,8 @@ def is_host(value):
 
 
 # def is_socket(value):
-    # ip, port = splitaddress(value)
-    # return is_ip(ip) and is_port(port)
+# ip, port = splitaddress(value)
+# return is_ip(ip) and is_port(port)
 
 
 def is_endpoint(value):
@@ -109,11 +117,10 @@ def is_resource(url, *args, **kwargs):
 
     return False
 
-
 # TODO: Recheck in 0.5.x
 # def is_url(url):
-    # url = format.url(url)
-    # try:
-        # return validators.url(url)
-    # except validators.ValidationFailure:
-        # return False
+# url = format.url(url)
+# try:
+# return validators.url(url)
+# except validators.ValidationFailure:
+# return False

@@ -150,12 +150,16 @@ class HTTPRequest:
         if "timeout" in options:
             self.c.setopt(pycurl.LOW_SPEED_TIME, int(options["timeout"]))
 
-    def add_cookies(self):
+    def add_cookies(self, cookies):
         """
         put cookies from curl handle to cj.
         """
         if self.cj:
-            self.cj.add_cookies(self.c.getinfo(pycurl.INFO_COOKIELIST))
+            try:
+                iter(cookies)
+            except TypeError:
+                raise
+            self.cj.add_cookies(cookies)
 
     def get_cookies(self):
         """
@@ -255,8 +259,14 @@ class HTTPRequest:
         self.c.setopt(pycurl.POSTFIELDS, b"")
         self.last_effective_url = self.c.getinfo(pycurl.EFFECTIVE_URL)
 
+        response_cookies = self.decode_cookies()
         if save_cookies:
-            self.add_cookies()
+            try:
+                self.add_cookies(response_cookies)
+            except TypeError:
+                pass
+            finally:
+                pass
 
         try:
             self.code = self.verify_header()
@@ -298,6 +308,37 @@ class HTTPRequest:
             self.rep = io.BytesIO()
             return value
 
+    def decode_cookies(self):
+        header = self.header.splitlines()
+        cookies = []
+        for line in header:
+            line = line.lower().replace(b' ', b'')
+            if not line.startswith(b'set-cookie:'):
+                continue
+            cookie_line = line[11:]
+            cookie_values = cookie_line.split(b';')
+
+            is_first = True
+            cookie_domain = None
+            cookie_key = None
+            cookie_value = None
+
+            for cookie_value_line in cookie_values:
+                cookie_key_value_pair = cookie_value_line.split(b'=')
+                if is_first:
+                    cookie_key = cookie_key_value_pair[0]
+                    cookie_value = cookie_key_value_pair[1]
+
+                if cookie_key_value_pair[0] == b'domain':
+                    cookie_domain = cookie_key_value_pair[1]
+                is_first = False
+
+            cookies.append(tuple([cookie_domain, cookie_key, cookie_value]))
+
+        return cookies
+
+
+
     def decode_response(self, rep):
         """
         decode with correct encoding, relies on header.
@@ -306,17 +347,17 @@ class HTTPRequest:
         encoding = "utf-8"  #: default encoding
 
         for line in header:
-            line = line.lower().replace(" ", "")
-            if not line.startswith("content-type:") or (
-                "text" not in line and "application" not in line
+            line = line.lower().replace(b' ', b'')
+            if not line.startswith(b'content-type:') or (
+                b'text' not in line and b'application' not in line
             ):
                 continue
 
-            none, delemiter, charset = line.rpartition("charset=")
+            none, delemiter, charset = line.rpartition(b'charset=')
             if delemiter:
-                charset = charset.split(";")
+                charset = charset.split(b';')
                 if charset:
-                    encoding = charset[0]
+                    encoding = charset[0].decode('utf-8')
 
         try:
             # self.log.debug(f"Decoded {encoding}")

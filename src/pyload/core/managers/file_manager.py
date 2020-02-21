@@ -174,7 +174,12 @@ class FileManager:
         e = RemoveEvent("pack", id, "collector" if not p.queue else "queue")
 
         pyfiles = self.cache.values()
+        pyfile_ids = []
         for pyfile in pyfiles:
+            pyfile_ids.append(pyfile.id)
+
+        for pyfile_id in pyfile_ids:
+            pyfile = self.get_file(pyfile_id)
             if pyfile.packageid == id:
                 pyfile.abort_download()
                 pyfile.release()

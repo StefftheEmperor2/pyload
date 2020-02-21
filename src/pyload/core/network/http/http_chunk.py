@@ -216,7 +216,12 @@ class HTTPChunk(HTTPRequest):
     def write_body(self, buf):
         # ignore BOM, it confuses unrar
         if not self.BOMChecked:
-            if [ord(b) for b in buf[:3]] == [239, 187, 191]:
+            bom = []
+            for b in buf[:3]:
+                if not isinstance(b, int):
+                    b = ord(b)
+                bom.append(b)
+            if b == [239, 187, 191]:
                 buf = buf[3:]
             self.BOMChecked = True
 
@@ -251,6 +256,10 @@ class HTTPChunk(HTTPRequest):
         """
         for orgline in self.decode_response(self.header).splitlines():
             line = orgline.strip().lower()
+
+            if not isinstance(line, str) and line.has_attr('decode'):
+                line = line.decode('utf-8')
+
             if line.startswith("accept-ranges") and "bytes" in line:
                 self.p.chunk_support = True
 

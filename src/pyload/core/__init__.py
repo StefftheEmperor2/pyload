@@ -397,6 +397,9 @@ class Core:
 
             self.addon_manager.core_exiting()
 
+            self.log.debug("Stopping webserver...")
+            self.webserver.stop()
+
         finally:
             self.files.sync_save()
             self._running.clear()

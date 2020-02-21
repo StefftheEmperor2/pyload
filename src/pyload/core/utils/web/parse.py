@@ -7,7 +7,7 @@ import re
 import urllib.parse
 
 # import tld
-from ..check import isiterable
+from ..check import is_iterable
 from . import format, purge
 from .check import is_host, is_port, is_ip
 from .convert import host_to_ip, ip_to_host, splitaddress
@@ -15,7 +15,7 @@ from .convert import host_to_ip, ip_to_host, splitaddress
 
 def socket(text):
     addr, port = splitaddress(text.strip())
-    ip = addr if isip(addr) else host_to_ip(addr)
+    ip = addr if is_ip(addr) else host_to_ip(addr)
     if port is not None and not is_port(port):
         raise ValueError(port)
     return ip, port
@@ -62,7 +62,7 @@ def _same_inputs(taginputs, inputs):
         tagvalue = taginputs[key]
         if hasattr(value, "search") and re.match(value, tagvalue):
             continue
-        elif isiterable(value) and tagvalue in value:
+        elif is_iterable(value) and tagvalue in value:
             continue
         elif tagvalue == value:
             continue

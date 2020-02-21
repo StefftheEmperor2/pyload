@@ -63,8 +63,6 @@ def aes_decrypt(key, encrypted):
 
 
 def add_crypted2(js_key, *args, api, jk, encrypted, package):
-
-
     try:
         key_decoded = base64.b16decode(js_key)
 
@@ -73,7 +71,6 @@ def add_crypted2(js_key, *args, api, jk, encrypted, package):
     except Exception as exc:
         return f"Could not decrypt key {exc}", 500
 
-
     urls = [url for url in urls if url.strip()]
 
     try:
@@ -81,6 +78,7 @@ def add_crypted2(js_key, *args, api, jk, encrypted, package):
             api.add_package(package, urls, 0)
         else:
             api.generate_and_add_packages(urls, 0)
+
     except Exception:
         return "failed can't add", 500
     else:

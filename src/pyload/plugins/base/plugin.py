@@ -157,7 +157,7 @@ class BasePlugin:
         get={},
         post={},
         ref=True,
-        cookies=True,
+        cookies=None,
         just_header=False,
         decode=True,
         multipart=False,
@@ -219,7 +219,7 @@ class BasePlugin:
             get,
             post,
             bool(ref),
-            bool(cookies),
+            cookies,
             just_header,
             multipart,
             decode is True,
@@ -247,7 +247,7 @@ class BasePlugin:
             html = html_unescape(html)
 
         # TODO: Move to network in 0.6.x
-        html = _decode(html, decode)
+        html = _decode(html)
 
         self.last_html = html
 
@@ -257,7 +257,7 @@ class BasePlugin:
         # TODO: Move to network in 0.6.x
         header = {"code": req.code, "url": req.last_effective_url}
         # NOTE: req can be a HTTPRequest or a Browser object
-        header.update(parse_html_header(http_req.header))
+        header.update(parse_html_header(http_req.header.decode('utf-8')))
 
         self.last_header = header
 

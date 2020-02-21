@@ -13,8 +13,7 @@ class CookieJar:
 
     def add_cookies(self, clist):
         for c in clist:
-            name = c.split("\t")[5]
-            self.cookies[name] = c
+            self.cookies[c[1]] = c[2]
 
     def get_cookies(self):
         return list(self.cookies.values())

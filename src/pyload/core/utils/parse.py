@@ -7,7 +7,7 @@ import re
 from . import convert, purge, web
 from .convert import to_str
 from .seconds import to_midnight as seconds_to_midnight
-
+from .web import parse as web_parse
 # _RE_ALIAS = re.compile(r"[\d.-_]+")
 
 
@@ -40,12 +40,12 @@ def entries(text, allow_whitespaces=False):
     return [entry for entry in re.split(pattr, text) if entry]
 
 
-def name(text, purge=False):
+def name(text, purge=None):
     try:
-        name = web.parse.name(text)
+        parsed_name = web_parse(text)
     except Exception:
-        name = os.path.basename(text).strip()
-    return purge.name(name) if purge else name
+        parsed_name = os.path.basename(text).strip()
+    return purge.name(parsed_name) if purge is not None else parsed_name
 
 
 _ONEWORDS = (

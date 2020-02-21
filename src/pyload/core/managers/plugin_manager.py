@@ -321,14 +321,14 @@ class PluginManager:
 
         return name
 
-    def load_module(self, type, name):
+    def load_module(self, module_type, name):
         """
         Returns loaded module for plugin.
 
         :param type: plugin type, subfolder of module.plugins
         :param name:
         """
-        plugins = self.plugins[type]
+        plugins = self.plugins[module_type]
         if name in plugins:
             if APPID in plugins[name]:
                 return plugins[name][APPID]
@@ -353,11 +353,11 @@ class PluginManager:
             self.pyload.log.debug(f"Plugin {name} not found")
             self.pyload.log.debug(f"Available plugins : {plugins}")
 
-    def load_class(self, type, name):
+    def load_class(self, module_type, name):
         """
         Returns the class of a plugin with the same name.
         """
-        module = self.load_module(type, name)
+        module = self.load_module(module_type, name)
         if module:
             return getattr(module, name)
 
@@ -391,31 +391,37 @@ class PluginManager:
                     return self
 
     def load_module(self, module_type, name, replace=True):
-        if name not in sys.modules:  #: could be already in modules
-            if replace:
-                if self.ROOT in name:
-                    newname = name.replace(self.ROOT, self.USERROOT)
-                elif self.USERROOT in name:
-                    newname = name.replace(self.USERROOT, self.ROOT)
-                else:
-                    if module_type == 'addon':
-                        module_type = 'addons'
-                    elif module_type == 'downloader':
-                        module_type = 'downloaders'
+        if replace:
+            if self.ROOT in name:
+                newname = name.replace(self.ROOT, self.USERROOT)
+            elif self.USERROOT in name:
+                newname = name.replace(self.USERROOT, self.ROOT)
+            else:
+                if module_type == 'addon':
+                    module_type = 'addons'
+                elif module_type == 'account':
+                    module_type = 'accounts'
+                elif module_type == 'downloader':
+                    module_type = 'downloaders'
 
-                    newname = self.ROOT + module_type + '.' + name
+                newname = self.ROOT + module_type + '.' + name
+        else:
+            newname = name
 
-            if '.' in newname:
-                base, plugin = newname.rsplit(".", 1)
+        if '.' in newname:
+            base, plugin = newname.rsplit(".", 1)
 
-            self.pyload.log.debug(f"Redirected import {name} -> {newname}")
+        self.pyload.log.debug(f"Redirected import {name} -> {newname}")
 
+        if newname not in sys.modules:  #: could be already in modules
             module = __import__(newname, globals(), locals(), [plugin])
             # inject under new an old name
             sys.modules[name] = module
             sys.modules[newname] = module
+        else:
+            module = sys.modules[newname]
 
-        return sys.modules[name]
+        return module
 
     def reload_plugins(self, type_plugins):
         """

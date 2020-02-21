@@ -160,11 +160,6 @@ class BaseAddon(BasePlugin):
     def download_preparing(self, pyfile):
         pass
 
-    #: Deprecated method, use `download_preparing` instead (Remove in 0.6.x)
-    def download_preparing(self, pyfile):
-        if pyfile.plugin.req is not None:  # TODO: Remove in 0.6.x
-            return self.download_preparing(pyfile)
-
     def download_start(self, pyfile, url, filename):
         pass
 

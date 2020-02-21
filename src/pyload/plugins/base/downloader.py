@@ -121,6 +121,8 @@ class BaseDownloader(BaseHoster):
 
                 else:
                     raise Fail(exc)
+            except Exception as exc:
+                raise Fail(exc)
 
         finally:
             self._finalize()
@@ -381,8 +383,12 @@ class BaseDownloader(BaseHoster):
                 if rule in content:
                     return name
 
-            elif hasattr(rule, "search"):
-                m = rule.search(content)
+            elif hasattr(rule, 'search'):
+                if isinstance(content, str):
+                    m = rule.search(content)
+                else:
+                    m = rule.search(content.decode('utf-8'))
+
                 if m is not None:
                     self.last_check = m
                     return name

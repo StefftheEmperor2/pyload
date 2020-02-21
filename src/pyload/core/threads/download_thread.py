@@ -109,7 +109,12 @@ class DownloadThread(PluginThread):
                     )
                 else:
                     pyfile.set_status("failed")
-                    self.pyload.log.warning(
+                    if isinstance(msg, TypeError):
+                        f = self.pyload.log.error
+                    else:
+                        f = self.pyload.log.warning
+
+                    f(
                         self._("Download failed: {name} | {msg}").format(
                             name=pyfile.name, msg=msg
                         )
@@ -189,7 +194,7 @@ class DownloadThread(PluginThread):
 
             except Exception as exc:
                 pyfile.set_status("failed")
-                self.pyload.log.warning(
+                self.pyload.log.error(
                     self._("Download failed: {name} | {msg}").format(
                         name=pyfile.name, msg=exc
                     ),

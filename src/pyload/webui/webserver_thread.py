@@ -8,7 +8,8 @@ from cheroot import wsgi
 from cheroot.ssl.builtin import BuiltinSSLAdapter
 
 from .app import App
-
+from flask import request
+from werkzeug.serving import make_server
 
 # TODO: make configurable to serve API
 class WebServerThread(threading.Thread):
@@ -37,7 +38,14 @@ class WebServerThread(threading.Thread):
     def _run_develop(self):
         # TODO: inject our custom logger in werkzeug code?
         # NOTE: use_reloader=True -> 'ValueError: signal only works in main thread'
-        self.app.run(self.host, self.port, use_reloader=False)
+
+        self.srv = make_server(self.host, self.port, self.app)
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        self.srv.serve_forever()
+
+    def _stop_develop(self):
+            self.srv.shutdown()
 
     def _run_produc(self):
         bind_path = self.prefix.strip("/") + "/"
@@ -57,7 +65,7 @@ class WebServerThread(threading.Thread):
         server.safe_start()
 
     def run(self):
-        self.log.warning(
+        self.log.info(
             self._("Starting webserver: {host}:{port}").format(
                 host=self.host, port=self.port
             )
@@ -66,3 +74,7 @@ class WebServerThread(threading.Thread):
             self._run_develop()
         else:
             self._run_produc()
+
+    def stop(self):
+        if self.develop:
+            self._stop_develop()

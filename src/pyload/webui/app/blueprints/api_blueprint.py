@@ -40,6 +40,7 @@ def rpc(func, args=None):
     try:
         response = call_api(func, *args, **kwargs)
     except Exception as exc:
+        api.pyload.log.error(exc)
         response = jsonify(error=exc, traceback=traceback.format_exc()), 500
 
     return response

@@ -101,11 +101,16 @@ class CaptchaTask:
         """
         let the captcha wait secs for the solution.
         """
-        self.wait_until = max(time.time() + sec, self.wait_until)
+        time_inc = time.time() + sec
+        if self.wait_until is None:
+            self.wait_until = time_inc
+        else:
+            self.wait_until = max(time_inc, self.wait_until)
         self.status = "waiting"
 
     def is_waiting(self):
-        if self.result or self.error or time.time() > self.wait_until:
+        if self.result or self.error or self.wait_until is None \
+                or (self.wait_until is not None and time.time() > self.wait_until):
             return False
 
         return True
