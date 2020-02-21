@@ -236,11 +236,6 @@ class HTTPRequest:
 
         self.c.setopt(pycurl.HTTPHEADER, self.headers)
 
-        if post:
-            self.c.setopt(pycurl.POST, 1)
-        else:
-            self.c.setopt(pycurl.HTTPGET, 1)
-
         if not follow_location:
             self.c.setopt(pycurl.FOLLOWLOCATION, 0)
 
@@ -256,7 +251,6 @@ class HTTPRequest:
         if just_header:
             self.c.setopt(pycurl.NOBODY, 0)
 
-        self.c.setopt(pycurl.POSTFIELDS, b"")
         self.last_effective_url = self.c.getinfo(pycurl.EFFECTIVE_URL)
 
         response_cookies = self.decode_cookies()
