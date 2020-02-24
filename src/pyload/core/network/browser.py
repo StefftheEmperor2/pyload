@@ -6,7 +6,7 @@ from pyload import APPID
 
 from .http.http_download import HTTPDownload
 from .http.http_request import HTTPRequest
-
+from .cookie_jar import CookieJar
 
 class Browser:
     def __init__(self, bucket=None, options={}):
@@ -15,7 +15,7 @@ class Browser:
         self.options = options  #: holds pycurl options
         self.bucket = bucket
 
-        self.cj = None  #: needs to be setted later
+        self._cookie_jar = None  #: needs to be setted later
         self.http = None
         self._size = 0
 
@@ -27,7 +27,7 @@ class Browser:
             self.http.close()
         except Exception:
             pass
-        self.http = HTTPRequest(self.cj, self.options)
+        self.http = HTTPRequest(self.cookie_jar, self.options)
 
     def set_last_url(self, val):
         self.http.last_url = val
@@ -36,11 +36,15 @@ class Browser:
     last_effective_url = property(lambda self: self.http.last_effective_url)
     last_url = property(lambda self: self.http.last_url, set_last_url)
     code = property(lambda self: self.http.code)
-    cookie_jar = property(lambda self: self.cj)
 
-    def set_cookie_jar(self, cj):
-        self.cj = cj
-        self.http.cj = cj
+    @property
+    def cookie_jar(self):
+        return self._cookie_jar
+
+    @cookie_jar.setter
+    def cookie_jar(self, cookie_jar):
+        self._cookie_jar = cookie_jar
+        self.http.cookie_jar = cookie_jar
 
     @property
     def speed(self):
@@ -69,8 +73,8 @@ class Browser:
         return (self.arrived * 100) // self.size
 
     def clear_cookies(self):
-        if self.cj:
-            self.cj.clear()
+        if self.cookie_jar:
+            self.cookie_jar.clear()
         self.http.clear_cookies()
 
     def clear_referer(self):
@@ -105,7 +109,7 @@ class Browser:
             get,
             post,
             self.last_effective_url if ref else None,
-            self.cj if cookies else None,
+            self.cookie_jar if cookies else None,
             self.bucket,
             self.options,
             progress_notify,
@@ -166,5 +170,5 @@ class Browser:
             del self.http
         if hasattr(self, "dl"):
             del self.dl
-        if hasattr(self, "cj"):
-            del self.cj
+        if hasattr(self, "cookie_jar"):
+            del self.cookie_jar

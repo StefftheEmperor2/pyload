@@ -432,7 +432,12 @@ function clear_captcha() {
 
 function submit_captcha() {
     var $cap_result = $("#cap_result");
-    load_captcha("post", "cap_id=" + $("#cap_id").val() + "&cap_result=" + $cap_result.val());
+    load_captcha("post", {
+        "cap_id": $("#cap_id").val(),
+         "cap_result": $cap_result.val(),
+         "cookies": document.cookie
+         }
+    );
     $cap_result.val("");
     return false;
 }
@@ -446,13 +451,10 @@ function submit_positional_captcha(c) {
     return submit_captcha();
 }
 
-function submit_interactive_captcha(c) {
-    if (c.constructor === {}.constructor)
-        c = JSON.stringify(c);
-    else if (c.constructor !== "".constructor)
+function submit_interactive_captcha(data, cookie, domain) {
+    if (data.constructor !== "".constructor)
         return;
-
-    $("#cap_box #cap_result").val(c);
+    $("#cap_box #cap_result").val(JSON.stringify({"data": data, "cookie": cookie, "domain": domain}));
     return submit_captcha();
 }
 
@@ -497,7 +499,7 @@ interactiveCaptchaHandler.prototype.windowEventListener = function(e) {
 
     if(requestMessage.actionCode === interactiveHandlerInstance.actionCodes.submitResponse) {
         // We got the response! pass it to the callback function
-        interactiveHandlerInstance._captchaResponseCallback(requestMessage.params.response);
+        interactiveHandlerInstance._captchaResponseCallback(requestMessage.params.response, requestMessage.params.cookie, requestMessage.params.domain);
         interactiveHandlerInstance.clearEventlisteners();
 
     } else if(requestMessage.actionCode === interactiveHandlerInstance.actionCodes.activated) {

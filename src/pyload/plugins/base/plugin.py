@@ -197,7 +197,7 @@ class BasePlugin:
 
         # TODO: Move to network in 0.6.x
         if isinstance(cookies, list):
-            set_cookies(req.cj, cookies)
+            set_cookies(req.cookie_jar, cookies)
 
         http_req = self.req.http if hasattr(self.req, "http") else self.req
 
@@ -206,7 +206,14 @@ class BasePlugin:
             # NOTE: req can be a HTTPRequest or a Browser object
             http_req.c.setopt(pycurl.FOLLOWLOCATION, 0)
 
-        elif isinstance(redirect, int):
+        elif type(redirect) == bool:
+            http_req.c.setopt(pycurl.MAXREDIRS, int(
+                    self.pyload.api.get_config_value(
+                        "UserAgentSwitcher", "maxredirs", "plugin"
+                    )
+                )
+                or 5)
+        elif type(redirect) == int:
             # NOTE: req can be a HTTPRequest or a Browser object
             http_req.c.setopt(pycurl.MAXREDIRS, redirect)
 
@@ -224,23 +231,6 @@ class BasePlugin:
             multipart,
             decode is True,
         )  # TODO: Fix network multipart in 0.6.x
-
-        # TODO: Move to network in 0.6.x
-        if not redirect:
-            # NOTE: req can be a HTTPRequest or a Browser object
-            http_req.c.setopt(pycurl.FOLLOWLOCATION, 1)
-
-        elif isinstance(redirect, int):
-            maxredirs = (
-                int(
-                    self.pyload.api.get_config_value(
-                        "UserAgentSwitcher", "maxredirs", "plugin"
-                    )
-                )
-                or 5
-            )  # TODO: Remove `int` in 0.6.x
-            # NOTE: req can be a HTTPRequest or a Browser object
-            http_req.c.setopt(pycurl.MAXREDIRS, maxredirs)
 
         # TODO: Move to network in 0.6.x
         if decode:

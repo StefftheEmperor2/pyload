@@ -4,12 +4,14 @@
 import os
 
 import flask
+import json
 from flask.json import jsonify
 
 from pyload.core.utils import format
 
 from ..helpers import login_required, render_template, parse_query
-
+from pyload.core.network.cookie_jar import CookieJar
+from pyload.core.network.cookie_jar import Cookie
 bp = flask.Blueprint("json", __name__, url_prefix="/json")
 
 
@@ -241,8 +243,24 @@ def set_captcha():
 
     if flask.request.method == "POST":
         tid = int(flask.request.form["cap_id"])
-        result = flask.request.form["cap_result"]
-        api.set_captcha_result(tid, result)
+        result = json.loads(flask.request.form["cap_result"])
+        data = result['data']
+        cookie_jar_string = result['cookie']
+        domain = result['domain']
+
+        cookie_jar_items = cookie_jar_string.split(';')
+        cookie_jar = CookieJar()
+        for cookie_jar_item in cookie_jar_items:
+            cookie_jar_item_key_value_pair = cookie_jar_item.split('=')
+            cookie_key = cookie_jar_item_key_value_pair[0].strip()
+            cookie_value = cookie_jar_item_key_value_pair[1].strip()
+            cookie = Cookie()
+            cookie.name = cookie_key
+            cookie.value = cookie_value
+            cookie.domain = domain
+            cookie_jar.add_cookie(cookie)
+
+        api.set_captcha_result(tid, data, cookie_jar)
 
     task = api.get_captcha_task()
     if task.tid >= 0:

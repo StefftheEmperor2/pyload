@@ -3,7 +3,6 @@
 
 import codecs
 import io
-from http.client import responses
 from itertools import chain
 from logging import getLogger
 from urllib.parse import quote, urlencode
@@ -13,6 +12,7 @@ from pyload import APPID
 
 from ..exceptions import Abort
 from .exceptions import BadHeader
+from ..cookie_jar import Cookie, CookieJar
 
 
 def myquote(url):
@@ -161,15 +161,6 @@ class HTTPRequest:
                 raise
             self.cj.add_cookies(cookies)
 
-    def get_cookies(self):
-        """
-        add cookies from cj to curl handle.
-        """
-        if self.cj:
-            for c in self.cj.get_cookies():
-                self.c.setopt(pycurl.COOKIELIST, c)
-        return
-
     def clear_cookies(self):
         self.c.setopt(pycurl.COOKIELIST, "")
 
@@ -210,9 +201,19 @@ class HTTPRequest:
             self.c.setopt(pycurl.REFERER, self.last_url)
 
         if cookies:
-            self.c.setopt(pycurl.COOKIEFILE, b"")
-            self.c.setopt(pycurl.COOKIEJAR, b"")
-            self.get_cookies()
+            if isinstance(cookies, CookieJar):
+                curl_cookies = b''
+                first = False
+                for cookie in cookies.get_cookies():
+                    if isinstance(cookie, Cookie):
+                        curl_cookie = cookie.get_formatted()
+                    else:
+                        curl_cookie = cookie
+
+                    if not first:
+                        curl_cookies += b"\n"
+                    curl_cookies += curl_cookie
+                self.c.setopt(pycurl.COOKIELIST, curl_cookies)
 
     def load(
         self,
@@ -244,9 +245,6 @@ class HTTPRequest:
 
         self.c.perform()
         rep = self.header if just_header else self.get_response()
-
-        if not follow_location:
-            self.c.setopt(pycurl.FOLLOWLOCATION, 1)
 
         if just_header:
             self.c.setopt(pycurl.NOBODY, 0)

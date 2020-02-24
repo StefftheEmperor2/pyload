@@ -42,10 +42,10 @@ class RequestFactory:
             req = Browser(self.bucket, options)
 
             if account:
-                cj = self.get_cookie_jar(plugin_name, account)
-                req.set_cookie_jar(cj)
+                cookie_jar = self.get_cookie_jar(plugin_name, account)
+                req.cookie_jar = cookie_jar
             else:
-                req.set_cookie_jar(CookieJar(plugin_name))
+                req.cookie_jar = CookieJar(plugin_name)
 
         return req
 

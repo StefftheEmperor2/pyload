@@ -178,6 +178,7 @@ class BaseCaptcha(BasePlugin):
             captcha_manager.remove_task(self.task)
 
         result = self.task.result
+        cookie_jar = self.task.cookie_jar
 
         if self.task.error:
             if not self.task.handler and not self.pyload.is_client_connected():
@@ -196,7 +197,7 @@ class BaseCaptcha(BasePlugin):
                 ).format(timeout)
             )
 
-        return result
+        return {"result": result, "cookie_jar": cookie_jar}
 
     def invalid(self, msg=""):
         if not self.task:

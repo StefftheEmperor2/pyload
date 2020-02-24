@@ -1090,17 +1090,18 @@ class Api:
 
     @legacy("setCaptchaResult")
     @permission(Perms.STATUS)
-    def set_captcha_result(self, tid, result):
+    def set_captcha_result(self, tid, result, cookie_jar):
         """
         Set result for a captcha task.
 
         :param tid: task id
         :param result: captcha result
+        :param cookie_jar cookie_jar
         """
         self.pyload.last_client_connected = time.time()
         task = self.pyload.captcha_manager.get_task_by_id(tid)
         if task:
-            task.set_result(result)
+            task.set_result(result, cookie_jar)
             self.pyload.captcha_manager.remove_task(task)
 
     @legacy("getEvents")

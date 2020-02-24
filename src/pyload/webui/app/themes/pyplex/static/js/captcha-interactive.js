@@ -78,11 +78,11 @@
                             }, delay);
                           };
                         },
-                        submitResponse: function(response) {
+                        submitResponse: function(cookie, response) {
                             if (typeof gpyload.observer !== 'undefined') {
                                 gpyload.observer.disconnect();
                             }
-                            var responseMessage = {actionCode: "pyloadSubmitResponse", params: {response: response}};
+                            var responseMessage = {actionCode: "pyloadSubmitResponse", params: {"cookie": cookie, "response": response}};
                             parent.postMessage(JSON.stringify(responseMessage),"*");
                         },
                         activated: function() {

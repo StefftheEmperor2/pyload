@@ -80,7 +80,7 @@ class ReCaptcha(CaptchaService):
                      'sitekey': gpyload.data.sitekey,
                      'callback': function() {
                         var recaptchaResponse = grecaptcha.getResponse(); // get captcha response
-                        gpyload.submitResponse(recaptchaResponse);
+                        gpyload.submitResponse(document.cookie, recaptchaResponse);
                      }}
                 );
                 gpyload.activated();
@@ -444,7 +444,7 @@ class ReCaptcha(CaptchaService):
 
         result = self.decrypt_interactive(params, timeout=300)
 
-        return result, result
+        return result
 
 
 if __name__ == "__main__":

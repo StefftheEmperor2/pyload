@@ -93,14 +93,17 @@ class TurbobitNet(SimpleDownloader):
         if not inputs:
             self.fail(self._("Captcha form not found"))
 
+        cookie_jar = None
         if inputs["captcha_type"] == "recaptcha2":
             self.captcha = ReCaptcha(self.pyfile)
-            inputs["g-recaptcha-response"], challenge = self.captcha.challenge()
-
+            captcha_result = self.captcha.challenge()
+            inputs["g-recaptcha-response"] = captcha_result['result']
+            cookie_jar = captcha_result['cookie_jar']
         else:
             self.fail(self._("Unknown captcha type"))
 
-        self.data = self.load(self.free_url, post=inputs)
+        cookie_jar.set_dot_domain()
+        self.data = self.load(self.free_url, post=inputs, cookies=cookie_jar)
 
     def handle_premium(self, pyfile):
         m = re.search(self.LINK_PREMIUM_PATTERN, self.data)

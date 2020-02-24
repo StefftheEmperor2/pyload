@@ -4,6 +4,7 @@ import re
 
 from pyload.core.network.http.exceptions import BadHeader
 from pyload.core.network.request_factory import get_url
+from pyload.core.network.cookie_jar import CookieJar
 from pyload.core.utils import parse
 
 from ..helpers import replace_patterns
@@ -156,7 +157,7 @@ class SimpleDownloader(BaseDownloader):
 
             elif info["status"] in (3, 7):
                 try:
-                    html = get_url(url, cookies=cls.COOKIES, decode=cls.TEXT_ENCODING)
+                    html = get_url(url, cookies=CookieJar.factory(cls.COOKIES), decode=cls.TEXT_ENCODING)
 
                 except BadHeader as exc:
                     info["error"] = "{}: {}".format(exc.code, exc.content)
@@ -268,9 +269,9 @@ class SimpleDownloader(BaseDownloader):
     def _preload(self):
         if self.data:
             return
-
+        cookie_jar = CookieJar.factory(self.COOKIES)
         self.data = self.load(
-            self.pyfile.url, cookies=self.COOKIES, ref=False, decode=self.TEXT_ENCODING
+            self.pyfile.url, cookies=cookie_jar, ref=False, decode=self.TEXT_ENCODING
         )
 
     def process(self, pyfile):

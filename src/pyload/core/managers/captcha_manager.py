@@ -73,15 +73,16 @@ class CaptchaTask:
         self.result = None
         self.wait_until = None
         self.error = None  #: error message
-
+        self._cookie_jar = None
         self.status = "init"
         self.data = {}  #: handler can store data here
 
     def get_captcha(self):
         return self.captcha_params, self.captcha_format, self.captcha_result_type
 
-    def set_result(self, result):
+    def set_result(self, result, cookie_jar=None):
         if self.is_textual() or self.is_interactive():
+            self.cookie_jar = cookie_jar
             self.result = result
 
         elif self.is_positional():
@@ -150,6 +151,17 @@ class CaptchaTask:
 
     def correct(self):
         [x.captcha_correct(self) for x in self.handler]
+
+    @property
+    def cookie_jar(self):
+        return self._cookie_jar
+
+    @cookie_jar.setter
+    def cookie_jar(self, cookie_jar):
+        self._cookie_jar = cookie_jar
+
+    def set_cookie_jar(self, cookie_jar):
+        self.cookie_jar = cookie_jar
 
     def __str__(self):
         return f"<CaptchaTask '{self.id}'>"
