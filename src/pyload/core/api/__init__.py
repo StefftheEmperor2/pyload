@@ -1069,7 +1069,10 @@ class Api:
         task = self.pyload.captcha_manager.get_task()
         if task:
             task.set_wating_for_user(exclusive=exclusive)
-            data, type, result = task.get_captcha()
+            data = task.captcha_params_data
+            type = task.captcha_format
+            result = task.captcha_result_type
+
             t = CaptchaTask(int(task.id), json.dumps(data), type, result)
             return t
         else:

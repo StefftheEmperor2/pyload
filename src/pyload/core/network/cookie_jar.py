@@ -2,7 +2,8 @@
 # AUTHOR: mkaay, RaNaN
 
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
+
 
 
 class Cookie(object):
@@ -14,6 +15,7 @@ class Cookie(object):
         self._path = None
         self._expire = None
         self._secure = None
+        self._max_age = None
 
     @property
     def domain(self):
@@ -71,10 +73,19 @@ class Cookie(object):
     def secure(self, secure):
         self._secure = secure
 
+    @property
+    def max_age(self):
+        return self._max_age
+
+    @max_age.setter
+    def max_age(self, max_age):
+        self._max_age = max_age
+
     def set_dot_domain(self):
         domain = self.domain
-        if domain[0] != '.':
-            self.domain = '.' + domain
+        if domain is not None:
+            if domain[0] != '.':
+                self.domain = '.' + domain
 
     def get_formatted(self):
         domain = self.domain if self.domain is not None else '.'
@@ -95,19 +106,56 @@ class Cookie(object):
         else:
             secure = 'FALSE'
 
-        expire = self.expire if self.expire is not None else time.time() + timedelta(hours=744).seconds #: 31 days retention
+        expire = self.expire if self.expire is not None \
+            else int((datetime.fromtimestamp(int(time.time()))
+                      + timedelta(hours=744)).timestamp()) #: 31 days retention
         return f"{domain}\t{with_subdomains}\t{path}\t{secure}\t{expire}\t{self.name}\t{self.value}".encode('UTF-8')
+
+    @property
+    def json(self):
+        name = self.name.decode('utf-8') if isinstance(self.name, bytes) else self.name
+        value = self.value.decode('utf-8') if isinstance(self.value, bytes) else self.value
+        domain = self.domain.decode('utf-8') if isinstance(self.domain, bytes) else self.domain
+        path = self.path.decode('utf-8') if isinstance(self.path, bytes) else self.path
+        expire = self.expire.decode('utf-8') if isinstance(self.expire, bytes) else self.expire
+        max_age = self.max_age.decode('utf-8') if isinstance(self.max_age, bytes) else self.max_age
+        return {
+            "name": name,
+            "value": value,
+            "domain": domain,
+            "path": path,
+            "expire": expire,
+            "secure": self.secure,
+            "with_subdomains": self.with_subdomains,
+            "max_age": max_age
+        }
+
+class CookieJarIterator:
+    def __init__(self, cookie_jar):
+        # Cookie_Jar object reference
+        self._cookie_jar = cookie_jar
+        # member variable to keep track of current index
+        self._index = 0
+
+    def __next__(self):
+        ''''Returns the next value from team object's lists '''
+        if self._index < len(self._cookie_jar):
+            cookie = self._cookie_jar.get_cookie_at(self._index)
+            self._index += 1
+            return cookie
+        # End of Iteration
+        raise StopIteration
 
 
 class CookieJar:
     def __init__(self, plugin_name=None, account=None):
-        self.cookies = {}
+        self._cookies = {}
         self.plugin = plugin_name
         self.account = account
 
     def add_cookies(self, cookie_list):
-        for c in cookie_list:
-            self.cookies[c[1]] = c[2]
+        for cookie in cookie_list:
+            self.add_cookie(cookie)
 
     @staticmethod
     def factory_by_string(cookie_string):
@@ -123,6 +171,7 @@ class CookieJar:
 
     @staticmethod
     def factory(cookies):
+        cookie_jar = cookies
         if isinstance(cookies, CookieJar):
             cookie_jar = cookies
         elif type(cookies) is list:
@@ -174,5 +223,32 @@ class CookieJar:
         cookie_item.expire = expire
         self.add_cookie(cookie_item)
 
+    @property
+    def cookies(self):
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, cookies):
+        self._cookies = cookies
+
     def clear(self):
         self.cookies = {}
+
+    def __iter__(self):
+        return CookieJarIterator(self)
+
+    def __len__(self):
+        return len(self.cookies.keys())
+
+    def get_cookie_at(self, index):
+        return list(self.cookies.values())[index]
+
+    @property
+    def json(self):
+        data = {}
+        for key, value in self.cookies.items():
+            key = key.decode('utf-8') if isinstance(key, bytes) else key
+            data[key] = value.json
+        return data
+
+

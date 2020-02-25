@@ -370,7 +370,6 @@ function LoadJsonToContent(a) {
 
 function set_captcha(a) {
     captcha_reset_default();
-
     params = JSON.parse(a.params);
     $("#cap_id").val(a.id);
     if (a.result_type === "textual") {

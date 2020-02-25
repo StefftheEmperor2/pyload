@@ -245,20 +245,35 @@ def set_captcha():
         tid = int(flask.request.form["cap_id"])
         result = json.loads(flask.request.form["cap_result"])
         data = result['data']
-        cookie_jar_string = result['cookie']
+        cookie_jar_param = result['cookie']
         domain = result['domain']
 
-        cookie_jar_items = cookie_jar_string.split(';')
-        cookie_jar = CookieJar()
-        for cookie_jar_item in cookie_jar_items:
-            cookie_jar_item_key_value_pair = cookie_jar_item.split('=')
-            cookie_key = cookie_jar_item_key_value_pair[0].strip()
-            cookie_value = cookie_jar_item_key_value_pair[1].strip()
-            cookie = Cookie()
-            cookie.name = cookie_key
-            cookie.value = cookie_value
-            cookie.domain = domain
-            cookie_jar.add_cookie(cookie)
+        if type(cookie_jar_param) is dict:
+            cookie_jar_items = list(cookie_jar_param.values())
+            cookie_jar = CookieJar()
+            for cookie_jar_item in cookie_jar_items:
+                cookie = Cookie()
+                cookie.name = cookie_jar_item['name']
+                cookie.value = cookie_jar_item['value']
+                cookie.domain = cookie_jar_item['domain']
+                cookie.path = cookie_jar_item['path']
+                cookie.expire = cookie_jar_item['expire']
+                cookie.secure = cookie_jar_item['secure']
+                cookie.with_subdomains = cookie_jar_item['with_subdomains']
+                cookie_jar.add_cookie(cookie)
+
+        elif type(cookie_jar_param) is str:
+            cookie_jar_items = cookie_jar_param.split(';')
+            cookie_jar = CookieJar()
+            for cookie_jar_item in cookie_jar_items:
+                cookie_jar_item_key_value_pair = cookie_jar_item.split('=')
+                cookie_key = cookie_jar_item_key_value_pair[0].strip()
+                cookie_value = cookie_jar_item_key_value_pair[1].strip()
+                cookie = Cookie()
+                cookie.name = cookie_key
+                cookie.value = cookie_value
+                cookie.domain = domain
+                cookie_jar.add_cookie(cookie)
 
         api.set_captcha_result(tid, data, cookie_jar)
 
@@ -268,7 +283,7 @@ def set_captcha():
             "captcha": True,
             "id": task.tid,
             "params": task.data,
-            "result_type": task.result_type,
+            "result_type": task.result_type
         }
     else:
         data = {"captcha": False}

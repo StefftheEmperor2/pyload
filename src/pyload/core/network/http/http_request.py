@@ -47,7 +47,7 @@ class HTTPRequest:
         self.c = pycurl.Curl()
         self.rep = None
 
-        self.cj = cookies  #: cookiejar
+        self.cookie_jar = cookies  #: cookiejar
 
         self.last_url = None
         self.last_effective_url = None
@@ -59,7 +59,8 @@ class HTTPRequest:
         self.headers = []  #: temporary request header
 
         self.init_handle()
-        self.set_interface(options)
+        if options is not None:
+            self.set_interface(options)
 
         self.c.setopt(pycurl.WRITEFUNCTION, self.write)
         self.c.setopt(pycurl.HEADERFUNCTION, self.write_header)
@@ -76,6 +77,8 @@ class HTTPRequest:
         """
         sets common options to curl handle.
         """
+        self.c.setopt(pycurl.COOKIEJAR, '')
+        self.c.setopt(pycurl.COOKIEFILE, '')
         self.c.setopt(pycurl.FOLLOWLOCATION, 1)
         self.c.setopt(pycurl.MAXREDIRS, 10)
         self.c.setopt(pycurl.CONNECTTIMEOUT, 30)
@@ -111,7 +114,7 @@ class HTTPRequest:
 
     def set_interface(self, options):
         options = {
-            k: v.encode() if hasattr(v, "encode") else v for k, v in options.items()
+            k: (v.encode() if hasattr(v, "encode") else v) for k, v in options.items()
         }
 
         interface, proxy, ipv6 = (
@@ -152,14 +155,17 @@ class HTTPRequest:
 
     def add_cookies(self, cookies):
         """
-        put cookies from curl handle to cj.
+        put cookies from curl handle to cookie_jar.
         """
-        if self.cj:
+        if self.cookie_jar is None:
+            self.cookie_jar = CookieJar()
+
+        if isinstance(self.cookie_jar, CookieJar):
             try:
                 iter(cookies)
             except TypeError:
                 raise
-            self.cj.add_cookies(cookies)
+            self.cookie_jar.add_cookies(cookies)
 
     def clear_cookies(self):
         self.c.setopt(pycurl.COOKIELIST, "")
@@ -203,7 +209,7 @@ class HTTPRequest:
         if cookies:
             if isinstance(cookies, CookieJar):
                 curl_cookies = b''
-                first = False
+                first = True
                 for cookie in cookies.get_cookies():
                     if isinstance(cookie, Cookie):
                         curl_cookie = cookie.get_formatted()
@@ -212,8 +218,19 @@ class HTTPRequest:
 
                     if not first:
                         curl_cookies += b"\n"
+                    first = False
                     curl_cookies += curl_cookie
-                self.c.setopt(pycurl.COOKIELIST, curl_cookies)
+
+                curl_list = curl_cookies.decode('utf-8')
+                self.c.setopt(pycurl.COOKIELIST, curl_list)
+#                    self.c.setopt(pycurl.COOKIELIST, "Set-Cookie: key=value; Wed, 21 Oct 2015 07:28:00 GMT")
+                    #self.c.setopt(pycurl.COOKIE, "test=val;Max-Age=25")
+#                    self.c.setopt(pycurl.COOKIELIST, ".lw-rulez.de\tTRUE\t/\tTRUE\t0\tkey\tvalue\n")
+#            self.c.setopt(pycurl.COOKIELIST, "recaptcha.lw-rulez.de\tTRUE\t/	FALSE	1582734272	test	bla")
+#           'recaptcha.lw-rulez.de	TRUE	/	FALSE	1582648079	test	bla'
+#            self.c.setopt(pycurl.COOKIELIST, "recaptcha.lw-rulez.de\tTRUE\t/\tFALSE\t1582648079\ttest\tbla")
+#            self.c.setopt(pycurl.COOKIELIST, "recaptcha.lw-rulez.de\tTRUE\t/\tFALSE\t0\tfoo\tbarz")
+#                self.c.setopt(pycurl.COOKIELIST, curl_cookies)
 
     def load(
         self,
@@ -302,32 +319,47 @@ class HTTPRequest:
 
     def decode_cookies(self):
         header = self.header.splitlines()
-        cookies = []
+        cookie_jar = CookieJar()
         for line in header:
-            line = line.lower().replace(b' ', b'')
-            if not line.startswith(b'set-cookie:'):
+            if not line.lower().startswith(b'set-cookie:'):
                 continue
             cookie_line = line[11:]
             cookie_values = cookie_line.split(b';')
 
             is_first = True
             cookie_domain = None
-            cookie_key = None
+            cookie_name= None
             cookie_value = None
+            cookie_expires = None
+            cookie_path = None
+            cookie_max_age = None
 
             for cookie_value_line in cookie_values:
-                cookie_key_value_pair = cookie_value_line.split(b'=')
+                cookie_key_value_pair = [item.strip() for item in cookie_value_line.split(b'=')]
                 if is_first:
-                    cookie_key = cookie_key_value_pair[0]
+                    cookie_name = cookie_key_value_pair[0]
                     cookie_value = cookie_key_value_pair[1]
-
+                if cookie_key_value_pair[0] == b'expires':
+                    cookie_expires = cookie_key_value_pair[1]
+                if cookie_key_value_pair[0] == b'path':
+                    cookie_path = cookie_key_value_pair[1]
                 if cookie_key_value_pair[0] == b'domain':
                     cookie_domain = cookie_key_value_pair[1]
+                if cookie_key_value_pair[0] == b'Max-Age':
+                    cookie_max_age = cookie_key_value_pair[1]
                 is_first = False
 
-            cookies.append(tuple([cookie_domain, cookie_key, cookie_value]))
+            cookie_item = Cookie()
+            cookie_item.name = cookie_name
+            cookie_item.value = cookie_value
+            cookie_item.domain = cookie_domain
+            cookie_item.expire = cookie_expires
+            cookie_item.path = cookie_path
+            cookie_item.max_age = cookie_max_age
 
-        return cookies
+            cookie_jar.add_cookie(cookie_item)
+
+        return cookie_jar
 
 
 
@@ -405,8 +437,8 @@ class HTTPRequest:
             self.rep.close()
             del self.rep
 
-        if hasattr(self, "cj"):
-            del self.cj
+        if hasattr(self, "cookie_jar"):
+            del self.cookie_jar
 
         if hasattr(self, "c"):
             self.c.close()

@@ -126,7 +126,9 @@ class Browser:
         """
         retrieves page.
         """
-        return self.http.load(*args, **kwargs)
+        data = self.http.load(*args, **kwargs)
+        self.cookie_jar = self.http.cookie_jar
+        return data
 
     def put_header(self, name, value):
         """

@@ -5,7 +5,7 @@ import time
 from threading import Lock
 
 from ..utils.old import lock
-
+from pyload.core.network.cookie_jar import CookieJar
 
 class CaptchaManager:
     def __init__(self, core):
@@ -76,6 +76,13 @@ class CaptchaTask:
         self._cookie_jar = None
         self.status = "init"
         self.data = {}  #: handler can store data here
+
+    @property
+    def captcha_params_data(self):
+        data = self.captcha_params.copy()
+        if 'cookie_jar' in data and isinstance(data['cookie_jar'], CookieJar):
+            data['cookie_jar'] = data['cookie_jar'].json
+        return data
 
     def get_captcha(self):
         return self.captcha_params, self.captcha_format, self.captcha_result_type

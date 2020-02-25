@@ -80,7 +80,7 @@ class ReCaptcha(CaptchaService):
                      'sitekey': gpyload.data.sitekey,
                      'callback': function() {
                         var recaptchaResponse = grecaptcha.getResponse(); // get captcha response
-                        gpyload.submitResponse(document.cookie, recaptchaResponse);
+                        gpyload.submitResponse(recaptchaResponse);
                      }}
                 );
                 gpyload.activated();
@@ -440,6 +440,7 @@ class ReCaptcha(CaptchaService):
                 "signature": self.RECAPTCHA_INTERACTIVE_SIG,
                 "code": self.RECAPTCHA_INTERACTIVE_JS,
             },
+            "cookie_jar": self.pyfile.plugin.req.cookie_jar
         }
 
         result = self.decrypt_interactive(params, timeout=300)
