@@ -181,7 +181,7 @@ class BaseAddon(BasePlugin):
         if pyfile.has_status(
             "failed"
         ):  # NOTE: Check if "still" set as failed (Fix in 0.6.x)
-            return self.download_failed(pyfile)
+            return True
 
     def package_processed(self, pypack):
         pass

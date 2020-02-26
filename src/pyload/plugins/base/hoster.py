@@ -124,7 +124,7 @@ class BaseHoster(BasePlugin):
                 plugintype=plugintype.upper(),
                 pluginname=pluginname,
                 id=self.pyfile.id,
-                msg="%s" * len(args),
+                msg=" %s" * len(args),
             ),
             *args,
             **kwargs,

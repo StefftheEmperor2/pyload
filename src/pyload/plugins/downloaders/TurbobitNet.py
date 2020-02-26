@@ -49,44 +49,50 @@ class TurbobitNet(SimpleDownloader):
 
     LIMIT_WAIT_PATTERN = r"<div id=\'timeout\'>(\d+)<"
 
-    def handle_free(self, pyfile):
-        self.free_url = "http://turbobit.net/download/free/{}".format(
+    @property
+    def free_url(self):
+        return "http://turbobit.net/download/free/{}".format(
             self.info["pattern"]["ID"]
         )
-        self.data = self.load(self.free_url)
+    def handle_free(self, pyfile):
+        self.data = self.load(self.free_url, cookies=self.cookie_jar)
 
         m = re.search(self.LIMIT_WAIT_PATTERN, self.data)
         if m is not None:
-            self.retry(wait=m.group(1))
+            self.retry(wait=int(m.group(1)))
 
         self.solve_captcha()
 
-        m = re.search(r"minLimit : (.+?),", self.data)
-        if m is None:
-            self.fail(self._("minLimit pattern not found"))
+        err = re.search(r"Incorrect, try again!", self.data)
+        if err is not None:
+            self.retry_captcha(msg=_('captcha incorrect'))
+        else:
+            m = re.search(r"minLimit : (.+?),", self.data)
+            if m is None:
+                self.fail(self._("minLimit pattern not found"))
 
-        wait_time = eval_js(m.group(1))
-        self.wait(wait_time)
+            wait_time = eval_js(m.group(1))
+            self.wait(wait_time)
 
-        self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With: XMLHttpRequest"])
-        self.data = self.load(
-            "http://turbobit.net/download/getLinkTimeout/{}".format(
-                self.info["pattern"]["ID"]
-            ),
-            ref=self.free_url,
-        )
-        self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With:"])
-
-        if "/download/started/" in self.data:
+            self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With: XMLHttpRequest"])
             self.data = self.load(
-                "http://turbobit.net/download/started/{}".format(
+                "http://turbobit.net/download/getLinkTimeout/{}".format(
                     self.info["pattern"]["ID"]
-                )
+                ),
+                ref=self.free_url,
             )
+            self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With:"])
 
-            m = re.search(self.LINK_FREE_PATTERN, self.data)
-            if m is not None:
-                self.link = "http://turbobit.net{}".format(m.group(1))
+            if "/download/started/" in self.data:
+                self.data = self.load(
+                    "http://turbobit.net/download/started/{}".format(
+                        self.info["pattern"]["ID"]
+                    )
+                )
+
+                m = re.search(self.LINK_FREE_PATTERN, self.data)
+                if m is not None:
+                    self.link = "http://turbobit.net{}".format(m.group(1))
 
     def solve_captcha(self):
         action, inputs = self.parse_html_form("action='#'")
@@ -103,7 +109,9 @@ class TurbobitNet(SimpleDownloader):
             self.fail(self._("Unknown captcha type"))
 
         cookie_jar.set_dot_domain()
-        self.data = self.load(self.free_url, post=inputs, cookies=cookie_jar)
+
+        self.data = self.load(self.free_url, post=inputs, cookies=self.cookie_jar,
+                              content_type='application/x-www-form-urlencoded')
 
     def handle_premium(self, pyfile):
         m = re.search(self.LINK_PREMIUM_PATTERN, self.data)

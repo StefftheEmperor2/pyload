@@ -29,6 +29,10 @@ class Browser:
             pass
         self.http = HTTPRequest(self.cookie_jar, self.options)
 
+    @property
+    def user_agent(self):
+        return self.http.user_agent
+
     def set_last_url(self, val):
         self.http.last_url = val
 
@@ -92,7 +96,7 @@ class Browser:
         filename,
         get={},
         post={},
-        ref=True,
+        referer=True,
         cookies=True,
         chunks=1,
         resume=False,
@@ -108,7 +112,7 @@ class Browser:
             filename,
             get,
             post,
-            self.last_effective_url if ref else None,
+            self.last_effective_url if referer else None,
             self.cookie_jar if cookies else None,
             self.bucket,
             self.options,

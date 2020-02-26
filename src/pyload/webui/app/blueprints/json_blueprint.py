@@ -255,11 +255,16 @@ def set_captcha():
                 cookie = Cookie()
                 cookie.name = cookie_jar_item['name']
                 cookie.value = cookie_jar_item['value']
-                cookie.domain = cookie_jar_item['domain']
-                cookie.path = cookie_jar_item['path']
-                cookie.expire = cookie_jar_item['expire']
-                cookie.secure = cookie_jar_item['secure']
-                cookie.with_subdomains = cookie_jar_item['with_subdomains']
+                if 'domain' in cookie_jar_item:
+                    cookie.domain = cookie_jar_item['domain']
+                if 'path' in cookie_jar_item:
+                    cookie.path = cookie_jar_item['path']
+                if 'expire' in cookie_jar_item:
+                    cookie.expire = cookie_jar_item['expire']
+                if 'secure' in cookie_jar_item:
+                    cookie.secure = cookie_jar_item['secure']
+                if 'with_subdomains' in cookie_jar_item:
+                    cookie.with_subdomains = cookie_jar_item['with_subdomains']
                 cookie_jar.add_cookie(cookie)
 
         elif type(cookie_jar_param) is str:

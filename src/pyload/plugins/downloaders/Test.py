@@ -33,7 +33,7 @@ class Test(SimpleDownloader):
         self.data = self.load(self.__free_url)
 
         self.solve_captcha()
-        m = re.search(r"success: true", self.data)
+        m = re.search(r"\"success\": true", self.data)
         if m is None:
             self.fail(self._("captcha not successful"))
 
@@ -43,6 +43,8 @@ class Test(SimpleDownloader):
         self.captcha = ReCaptcha(self.pyfile)
         captcha_result = self.captcha.challenge()
         cookie_jar = captcha_result['cookie_jar']
+        if len(inputs) == 0:
+            inputs = {"g-recaptcha-response": captcha_result['result']}
 
         cookie_jar.set_dot_domain()
         self.data = self.load(self.__free_url, post=inputs, cookies=cookie_jar)

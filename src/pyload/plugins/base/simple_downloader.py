@@ -141,6 +141,10 @@ class SimpleDownloader(BaseDownloader):
         ("Html file", r"\A\s*<!DOCTYPE html"),
     ]
 
+    def __init__(self, pyfile):
+        super().__init__(pyfile)
+        self.cookie_jar = CookieJar.factory(self.COOKIES)
+
     @classmethod
     def api_info(cls, url):
         return {}
@@ -269,9 +273,8 @@ class SimpleDownloader(BaseDownloader):
     def _preload(self):
         if self.data:
             return
-        cookie_jar = CookieJar.factory(self.COOKIES)
         self.data = self.load(
-            self.pyfile.url, cookies=cookie_jar, ref=False, decode=self.TEXT_ENCODING
+            self.pyfile.url, cookies=self.cookie_jar, referer=False, decode=self.TEXT_ENCODING
         )
 
     def process(self, pyfile):

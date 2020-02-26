@@ -5,6 +5,7 @@ PROPRIETARY_RESPONSES = {
     440: "Login Timeout - The client's session has expired and must log in again.",
     449: "Retry With - The server cannot honour the request because the user has not provided the required information",
     451: "Redirect - Unsupported Redirect Header",
+    500: "Internal Server Error",
     509: "Bandwidth Limit Exceeded",
     520: "Unknown Error",
     521: "Web Server Is Down - The origin server has refused the connection from CloudFlare",
@@ -21,9 +22,7 @@ PROPRIETARY_RESPONSES = {
 class BadHeader(Exception):
     def __init__(self, code, header=b"", content=b""):
         int_code = int(code)
-        response = responses.get(
-            int_code, PROPRIETARY_RESPONSES.get(int_code, "unknown error code")
-        )
+        response = PROPRIETARY_RESPONSES.get(int_code, "unknown error code")
         super().__init__(f"Bad server response: {code} {response}")
         self.code = int_code
         self.header = header

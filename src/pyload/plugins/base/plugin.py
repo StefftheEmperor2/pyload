@@ -7,6 +7,7 @@ import os
 import pycurl
 from pyload.core.network.exceptions import Fail, Skip
 from pyload.core.network.request_factory import get_request
+from pyload.core.network.cookie_jar import CookieJar
 from pyload.core.utils import fs
 from pyload.core.utils.old import decode, fixurl, html_unescape
 
@@ -79,7 +80,7 @@ class BasePlugin:
             "{plugintype} {pluginname}: {msg}".format(
                 plugintype=plugintype.upper(),
                 pluginname=pluginname,
-                msg="%s" * len(args),
+                msg=" %s" * len(args),
             ),
             *args,
             **kwargs,
@@ -156,13 +157,14 @@ class BasePlugin:
         url,
         get={},
         post={},
-        ref=True,
+        referer=True,
         cookies=None,
         just_header=False,
         decode=True,
         multipart=False,
         redirect=True,
         req=None,
+        content_type=None
     ):
         """
         Load content at url and returns it.
@@ -170,21 +172,12 @@ class BasePlugin:
         :param url:
         :param get:
         :param post:
-        :param ref:
+        :param referer:
         :param cookies:
         :param just_header: If True only the header will be retrieved and returned as dict
         :param decode: Wether to decode the output according to http header, should be True in most cases
         :return: Loaded content
         """
-        if self.pyload.debug:
-            self.log_debug(
-                "LOAD URL " + url,
-                *[
-                    "{}={}".format(key, value)
-                    for key, value in locals().items()
-                    if key not in ("self", "url", "_[1]")
-                ],
-            )
 
         url = fixurl(url, unquote=True)  #: Recheck in 0.6.x
 
@@ -195,18 +188,17 @@ class BasePlugin:
         elif not req:
             req = self.req
 
-        # TODO: Move to network in 0.6.x
-        if isinstance(cookies, list):
-            set_cookies(req.cookie_jar, cookies)
-
         http_req = self.req.http if hasattr(self.req, "http") else self.req
 
+        follow_location = False
         # TODO: Move to network in 0.6.x
         if not redirect:
             # NOTE: req can be a HTTPRequest or a Browser object
             http_req.c.setopt(pycurl.FOLLOWLOCATION, 0)
+            follow_location = False
 
         elif type(redirect) == bool:
+            follow_location = True
             http_req.c.setopt(pycurl.MAXREDIRS, int(
                     self.pyload.api.get_config_value(
                         "UserAgentSwitcher", "maxredirs", "plugin"
@@ -214,23 +206,28 @@ class BasePlugin:
                 )
                 or 5)
         elif type(redirect) == int:
+            follow_location = True
             # NOTE: req can be a HTTPRequest or a Browser object
             http_req.c.setopt(pycurl.MAXREDIRS, redirect)
-
-        # TODO: Move to network in 0.6.x
-        if isinstance(ref, str):
-            req.last_url = ref
 
         html = req.load(
             url,
             get,
             post,
-            bool(ref),
+            referer,
             cookies,
             just_header,
             multipart,
             decode is True,
+            follow_location,
+            True,
+            content_type
         )  # TODO: Fix network multipart in 0.6.x
+
+        response_cookies = req.cookie_jar
+
+        if isinstance(cookies, CookieJar):
+            cookies.add_cookies(response_cookies)
 
         # TODO: Move to network in 0.6.x
         if decode:
@@ -251,6 +248,22 @@ class BasePlugin:
 
         self.last_header = header
 
+        log_vars = []
+        for key, value in locals().copy().items():
+            if key not in ("self", "url", "_[1]", "header", 'browser', 'req', 'html', 'http_req', 'log_vars'):
+                if isinstance(value, CookieJar):
+                    log_value = value.json
+                else:
+                    log_value = value
+                log_vars.append([key, log_value])
+        if self.pyload.debug:
+            self.log_debug(
+                "LOADED URL " + url,
+                *[
+                    "{}={}".format(key, value)
+                    for key, value in log_vars
+                ],
+            )
         if just_header:
             return header
         else:

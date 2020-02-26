@@ -487,7 +487,6 @@ interactiveCaptchaHandler.prototype.startInteraction = function(url, params) {
     this._active = true;
 
     this._params = params;
-
     $("#" + this._iframeId).attr("src", url);
 };
 

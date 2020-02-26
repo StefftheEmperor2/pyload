@@ -157,6 +157,12 @@ class CookieJar:
         for cookie in cookie_list:
             self.add_cookie(cookie)
 
+    def add_key_value(self, key, value):
+        cookie = Cookie()
+        cookie.name = key
+        cookie.value = value
+        self.add_cookie(cookie)
+
     @staticmethod
     def factory_by_string(cookie_string):
         cookie_jar = __class__()
@@ -250,5 +256,21 @@ class CookieJar:
             key = key.decode('utf-8') if isinstance(key, bytes) else key
             data[key] = value.json
         return data
+
+    def get_cookie_list(self):
+        curl_cookies = b''
+        first = True
+        for cookie in self.get_cookies():
+            if isinstance(cookie, Cookie):
+                curl_cookie = cookie.get_formatted()
+            else:
+                curl_cookie = cookie
+
+            if not first:
+                curl_cookies += b"\n"
+            first = False
+            curl_cookies += curl_cookie
+
+        return curl_cookies
 
 
