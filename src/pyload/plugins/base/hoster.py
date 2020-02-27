@@ -235,7 +235,12 @@ class BaseHoster(BasePlugin):
         self.log_info(self._("Grabbing link info..."))
 
         old_info = dict(self.info)
-        new_info = self.get_info(self.pyfile.url, self.data)
+
+        cookie_jar = None
+        if hasattr(self, 'cookie_jar'):
+            cookie_jar = self.cookie_jar
+
+        new_info = self.get_info(self.pyfile.url, self.data, cookie_jar)
 
         self.info.update(new_info)
 

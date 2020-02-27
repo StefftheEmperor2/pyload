@@ -41,6 +41,7 @@ class Test(SimpleDownloader):
         action, inputs = self.parse_html_form("action=\"#\"")
 
         self.captcha = ReCaptcha(self.pyfile)
+        self.captcha.fallback_disabled = True
         captcha_result = self.captcha.challenge()
         cookie_jar = captcha_result['cookie_jar']
         if len(inputs) == 0:

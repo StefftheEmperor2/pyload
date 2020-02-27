@@ -96,6 +96,18 @@ class ReCaptcha(CaptchaService):
                 document.getElementsByTagName('head')[0].appendChild(js_script);
             }"""
 
+    def __init__(self, pyfile):
+        super().__init__(pyfile)
+        self._fallback_disabled = False
+
+    @property
+    def fallback_disabled(self):
+        return self._fallback_disabled
+
+    @fallback_disabled.setter
+    def fallback_disabled(self, fallback_disabled):
+        self._fallback_disabled = fallback_disabled
+
     def detect_key(self, data=None):
         html = data or self.retrieve_data()
 
@@ -345,21 +357,21 @@ class ReCaptcha(CaptchaService):
         return img
 
     def _challenge_v2(self, key, secure_token=None):
-        fallback_url = (
-            "http://www.google.com/recaptcha/api/fallback?k="
-            + key
-            + ("&stoken=" + secure_token if secure_token else "")
-        )
+        is_blocked = False
+        if not self.fallback_disabled:
+            fallback_url = (
+                "http://www.google.com/recaptcha/api/fallback?k="
+                + key
+                + ("&stoken=" + secure_token if secure_token else "")
+            )
 
-        html = self.pyfile.plugin.load(fallback_url, referer=self.pyfile.url)
-
-        if (
-            re.search(r'href="https://support.google.com/recaptcha.*"', html)
-            is not None
-        ):
+            html = self.pyfile.plugin.load(fallback_url, referer=self.pyfile.url)
+            is_blocked = (re.search(r'href="https://support.google.com/recaptcha.*"', html) is not None)
             self.log_warning(
                 self._("reCAPTCHA noscript is blocked, trying reCAPTCHA interactive")
             )
+
+        if self.fallback_disabled or is_blocked:
             return self._challenge_v2js(key, secure_token=secure_token)
 
         for i in range(10):

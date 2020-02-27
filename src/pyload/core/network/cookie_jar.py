@@ -3,7 +3,8 @@
 
 import time
 from datetime import timedelta, datetime
-
+from dateutil import tz
+from urllib.parse import quote_plus
 
 
 class Cookie(object):
@@ -31,7 +32,7 @@ class Cookie(object):
 
     @with_subdomains.setter
     def with_subdomains(self, with_subdomains):
-        self._with_subdomains =  with_subdomains
+        self._with_subdomains = with_subdomains
 
     @property
     def name(self):
@@ -87,6 +88,12 @@ class Cookie(object):
             if domain[0] != '.':
                 self.domain = '.' + domain
 
+    def is_expired(self):
+        is_expired = False
+        if isinstance(self.expire, datetime):
+            is_expired = (self.expire < datetime.now(tz.tzlocal()))
+        return is_expired
+
     def get_formatted(self):
         domain = self.domain if self.domain is not None else '.'
         if self.with_subdomains is not None:
@@ -106,10 +113,20 @@ class Cookie(object):
         else:
             secure = 'FALSE'
 
-        expire = self.expire if self.expire is not None \
-            else int((datetime.fromtimestamp(int(time.time()))
-                      + timedelta(hours=744)).timestamp()) #: 31 days retention
-        return f"{domain}\t{with_subdomains}\t{path}\t{secure}\t{expire}\t{self.name}\t{self.value}".encode('UTF-8')
+        if isinstance(self.expire, datetime):
+            expire_timestamp = int(self.expire.timestamp())
+        else:
+            expire_timestamp = int((datetime.fromtimestamp(int(time.time()))
+                                    + timedelta(hours=744)).timestamp())
+
+        return f"{domain}\t{with_subdomains}\t{path}\t{secure}\t{expire_timestamp}\t{self.name}\t{quote_plus(self.value)}".encode(
+            'UTF-8')
+
+    def get_expire_timestamp(self):
+        expire_timestamp = None
+        if isinstance(self.expire, datetime):
+            expire_timestamp = int(self.expire.timestamp())
+        return expire_timestamp
 
     @property
     def json(self):
@@ -117,7 +134,7 @@ class Cookie(object):
         value = self.value.decode('utf-8') if isinstance(self.value, bytes) else self.value
         domain = self.domain.decode('utf-8') if isinstance(self.domain, bytes) else self.domain
         path = self.path.decode('utf-8') if isinstance(self.path, bytes) else self.path
-        expire = self.expire.decode('utf-8') if isinstance(self.expire, bytes) else self.expire
+        expire = self.expire.decode('utf-8') if isinstance(self.expire, bytes) else self.get_expire_timestamp()
         max_age = self.max_age.decode('utf-8') if isinstance(self.max_age, bytes) else self.max_age
         return {
             "name": name,
@@ -129,6 +146,7 @@ class Cookie(object):
             "with_subdomains": self.with_subdomains,
             "max_age": max_age
         }
+
 
 class CookieJarIterator:
     def __init__(self, cookie_jar):
@@ -201,6 +219,10 @@ class CookieJar:
         else:
             return None
 
+    def set_domain(self, domain):
+        for cookie in self.cookies.values():
+            cookie.domain = domain
+
     def set_dot_domain(self):
         for cookie in self.cookies.values():
             cookie.set_dot_domain()
@@ -214,12 +236,12 @@ class CookieJar:
         ] = cookie_item
 
     def set_cookie(
-        self,
-        domain,
-        name,
-        value,
-        path="/",
-        expire=time.time() + timedelta(hours=744).seconds,  #: 31 days retention
+            self,
+            domain,
+            name,
+            value,
+            path="/",
+            expire=time.time() + timedelta(hours=744).seconds,  #: 31 days retention
     ):
         cookie_item = Cookie()
         cookie_item.name = name
@@ -273,4 +295,6 @@ class CookieJar:
 
         return curl_cookies
 
-
+    def __getitem__(self, name):
+        cookie = self.get_cookie(name)
+        return cookie.value

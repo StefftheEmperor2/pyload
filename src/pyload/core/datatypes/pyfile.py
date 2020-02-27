@@ -49,7 +49,7 @@ class PyFile:
         self._size = None
         self.size = size
 
-        self.status = status
+        self._status = status
         self.pluginname = pluginname
         self.packageid = package  #: should not be used, use package() instead
         self.error = error
@@ -110,6 +110,14 @@ class PyFile:
     def set_status(self, status):
         self.status = status_map[status]
         self.sync()  # TODO: needed aslong no better job approving exists
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, status):
+        self._status = status
 
     def set_custom_status(self, msg, status="processing"):
         self.statusname = msg

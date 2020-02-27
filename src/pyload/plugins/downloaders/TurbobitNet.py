@@ -36,7 +36,7 @@ class TurbobitNet(SimpleDownloader):
 
     URL_REPLACEMENTS = [(__pattern__ + ".*", r"https://turbobit.net/\g<ID>.html")]
 
-    COOKIES = [("turbobit.net", "user_lang", "en")]
+    COOKIES = []
 
     INFO_PATTERN = (
         r"<title>\s*Download file (?P<N>.+?) \((?P<S>[\d.,]+) (?P<U>[\w^_]+)\)"
@@ -54,6 +54,7 @@ class TurbobitNet(SimpleDownloader):
         return "http://turbobit.net/download/free/{}".format(
             self.info["pattern"]["ID"]
         )
+
     def handle_free(self, pyfile):
         self.data = self.load(self.free_url, cookies=self.cookie_jar)
 
@@ -69,6 +70,9 @@ class TurbobitNet(SimpleDownloader):
         else:
             m = re.search(r"minLimit : (.+?),", self.data)
             if m is None:
+                limit_match = re.search(self.LIMIT_WAIT_PATTERN, self.data)
+                if limit_match is not None:
+                    self.retry(wait=int(limit_match.group(1)))
                 self.fail(self._("minLimit pattern not found"))
 
             wait_time = eval_js(m.group(1))
@@ -102,16 +106,14 @@ class TurbobitNet(SimpleDownloader):
         cookie_jar = None
         if inputs["captcha_type"] == "recaptcha2":
             self.captcha = ReCaptcha(self.pyfile)
+            self.captcha.fallback_disabled = True
             captcha_result = self.captcha.challenge()
             inputs["g-recaptcha-response"] = captcha_result['result']
             cookie_jar = captcha_result['cookie_jar']
         else:
             self.fail(self._("Unknown captcha type"))
 
-        cookie_jar.set_dot_domain()
-
-        self.data = self.load(self.free_url, post=inputs, cookies=self.cookie_jar,
-                              content_type='application/x-www-form-urlencoded')
+        self.data = self.load(self.free_url, post=inputs, cookies=self.cookie_jar)
 
     def handle_premium(self, pyfile):
         m = re.search(self.LINK_PREMIUM_PATTERN, self.data)

@@ -13,7 +13,9 @@ from pyload import APPID
 from ..exceptions import Abort
 from .exceptions import BadHeader
 from ..cookie_jar import Cookie, CookieJar
-
+from datetime import datetime
+from dateutil import tz
+import re
 
 def myquote(url):
     try:
@@ -204,10 +206,11 @@ class HTTPRequest:
 
         if cookies:
             if isinstance(cookies, CookieJar):
-                curl_cookies = cookies.get_cookie_list()
+                for cookie in cookies:
+                    if not cookie.is_expired():
+                        cookie_formatted = cookie.get_formatted()
+                        self.c.setopt(pycurl.COOKIELIST, cookie_formatted.decode('utf-8'))
 
-                curl_list = curl_cookies.decode('utf-8')
-                self.c.setopt(pycurl.COOKIELIST, curl_list)
         if content_type is not None:
             self.headers.append('Content-Type: '+content_type)
 
@@ -308,19 +311,40 @@ class HTTPRequest:
 
             is_first = True
             cookie_domain = None
-            cookie_name= None
+            cookie_name = None
             cookie_value = None
             cookie_expires = None
             cookie_path = None
             cookie_max_age = None
-
+            is_expired = False
             for cookie_value_line in cookie_values:
                 cookie_key_value_pair = [item.strip() for item in cookie_value_line.split(b'=')]
                 if is_first:
                     cookie_name = unquote_plus(cookie_key_value_pair[0].decode('utf-8'))
                     cookie_value = unquote_plus(cookie_key_value_pair[1].decode('utf-8'))
                 if cookie_key_value_pair[0] == b'expires':
-                    cookie_expires = cookie_key_value_pair[1]
+                    expires = cookie_key_value_pair[1].decode('UTF-8')
+                    found = False
+                    matches = re.match(r'^[0-9]*$', expires)
+                    if matches:
+                        found = True
+                        expires = datetime.fromtimestamp(float(expires))
+                    if not found:
+                        found = True
+                        matches = re.match(r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), ([0-9]{2})\-'
+                                           + r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\-([0-9]{4}) '
+                                           + r'([0-9]{2}):([0-9]{2}):([0-9]{2}) ([A-Z]*)$', expires)
+                        if matches:
+                            found = True
+                            weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                            months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                            month_int = months.index(matches[3]) + 1
+                            expires = datetime(int(matches[4]), month_int, int(matches[2]), int(matches[5]), int(matches[6]), int(matches[7]), 0, tz.gettz(matches[8]))
+                        if found:
+                            if expires < datetime.now(tz.tzlocal()):
+                                is_expired = True
+                            cookie_expires = expires
+
                 if cookie_key_value_pair[0] == b'path':
                     cookie_path = cookie_key_value_pair[1]
                 if cookie_key_value_pair[0] == b'domain':
@@ -329,13 +353,14 @@ class HTTPRequest:
                     cookie_max_age = cookie_key_value_pair[1]
                 is_first = False
 
-            cookie_item = Cookie()
-            cookie_item.name = cookie_name
-            cookie_item.value = cookie_value
-            cookie_item.domain = cookie_domain
-            cookie_item.expire = cookie_expires
-            cookie_item.path = cookie_path
-            cookie_item.max_age = cookie_max_age
+            if not is_expired:
+                cookie_item = Cookie()
+                cookie_item.name = cookie_name
+                cookie_item.value = cookie_value
+                cookie_item.domain = cookie_domain
+                cookie_item.expire = cookie_expires
+                cookie_item.path = cookie_path
+                cookie_item.max_age = cookie_max_age
 
             cookie_jar.add_cookie(cookie_item)
 

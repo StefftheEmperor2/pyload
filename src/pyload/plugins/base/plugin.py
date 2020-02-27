@@ -199,12 +199,13 @@ class BasePlugin:
 
         elif type(redirect) == bool:
             follow_location = True
-            http_req.c.setopt(pycurl.MAXREDIRS, int(
-                    self.pyload.api.get_config_value(
-                        "UserAgentSwitcher", "maxredirs", "plugin"
-                    )
-                )
-                or 5)
+            config_option = self.pyload.api.get_config_value("UserAgentSwitcher", "maxredirs", "plugin")
+            if config_option is None:
+                config_option = None
+            else:
+                config_option = int(config_option)
+
+            http_req.c.setopt(pycurl.MAXREDIRS, config_option or 5)
         elif type(redirect) == int:
             follow_location = True
             # NOTE: req can be a HTTPRequest or a Browser object

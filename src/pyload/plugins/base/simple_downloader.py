@@ -150,7 +150,9 @@ class SimpleDownloader(BaseDownloader):
         return {}
 
     @classmethod
-    def get_info(cls, url="", html=""):
+    def get_info(cls, url="", html="", cookie_jar=None):
+        if cookie_jar is None:
+            cookie_jar = CookieJar.factory(cls.COOKIES)
         info = super(SimpleDownloader, cls).get_info(url)
         info.update(cls.api_info(url))
 
@@ -161,7 +163,7 @@ class SimpleDownloader(BaseDownloader):
 
             elif info["status"] in (3, 7):
                 try:
-                    html = get_url(url, cookies=CookieJar.factory(cls.COOKIES), decode=cls.TEXT_ENCODING)
+                    html = get_url(url, cookies=cookie_jar, decode=cls.TEXT_ENCODING)
 
                 except BadHeader as exc:
                     info["error"] = "{}: {}".format(exc.code, exc.content)

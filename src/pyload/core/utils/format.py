@@ -40,20 +40,20 @@ def path(*paths):
 path.from_iterable = lambda it: path(*it)
 
 
-def size(obj):
+def size(obj, precision=None):
     """
     formats size of bytes
     """
+    if precision is None:
+        precision = 2
     value = float(obj)
-    try:
-        return bitmath.Byte(value).best_prefix()
-    except AttributeError:
-        for prefix in BYTE_PREFIXES[:-1]:
-            if abs(value) < 1 << 10:
-                return f"{value:3.2f} {prefix}"
-            else:
-                value >>= 10
-        return f"{value:.2f} {BYTE_PREFIXES[-1]}"
+
+    for prefix in BYTE_PREFIXES[:-1]:
+        if abs(value) < (1 << 10):
+            return ("{value:3."+str(precision)+"f} {prefix}").format(value=value, prefix=prefix)
+        else:
+            value = value / (1 << 10)
+    return ("{value:.+"+str(precision)+"f} {prefix}").format(value=value, prefix=BYTE_PREFIXES[-1])
 
 
 def speed(obj):

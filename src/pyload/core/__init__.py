@@ -22,6 +22,7 @@ from .. import __version_info__ as PYLOAD_VERSION_INFO
 from .utils import format, fs
 from .utils.misc import reversemap
 from threading import Event
+from pyload.core.network.request_factory import RequestFactory
 
 
 class Restart(Exception):
@@ -138,9 +139,6 @@ class Core:
 
 
     def _init_network(self):
-        from .network import request_factory
-        from .network.request_factory import RequestFactory
-
         self.req = self.request_factory = RequestFactory(self)
 
 
