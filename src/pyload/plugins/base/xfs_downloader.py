@@ -77,10 +77,7 @@ class XFSDownloader(SimpleDownloader):
 
     def _set_xfs_cookie(self):
         cookie = (self.PLUGIN_DOMAIN, "lang", "english")
-        if isinstance(self.COOKIES, list) and cookie not in self.COOKIES:
-            self.COOKIES.insert(cookie)
-        else:
-            set_cookie(self.req.cj, *cookie)
+        self.cookie_jar.set_cookie(*cookie)
 
     def _prepare(self):
         if not self.PLUGIN_DOMAIN:

@@ -53,10 +53,10 @@ setcookie('test2', 'bla', 0);
     }
     ?>
 </div>
-<div>
+<div>Server:
 <?php echo print_r($_SERVER, TRUE); ?>
 </div>
-<div>
+<div>Session:
     <?php
 	if (isset($_SESSION))
 	{
@@ -64,10 +64,10 @@ setcookie('test2', 'bla', 0);
 	}
 	?>
 </div>
-<div>
+<div>Cookie:
     <?php echo print_r($_COOKIE, TRUE); ?>
 </div>
-<div>
+<div>Post:
     <?php echo print_r($_POST, TRUE); ?>
 </div>
 </body>

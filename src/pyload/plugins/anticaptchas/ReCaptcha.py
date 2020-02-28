@@ -444,6 +444,9 @@ class ReCaptcha(CaptchaService):
     def _challenge_v2js(self, key, secure_token=None):
         self.log_debug("Challenge reCAPTCHA v2 interactive")
 
+        user_agent = None;
+        if self.pyfile.plugin.req.user_agent is not None:
+            user_agent = self.pyfile.plugin.req.user_agent.decode('utf-8')
         params = {
             "url": self.pyfile.url,
             "sitekey": key,
@@ -453,7 +456,7 @@ class ReCaptcha(CaptchaService):
                 "code": self.RECAPTCHA_INTERACTIVE_JS,
             },
             "cookie_jar": self.pyfile.plugin.req.cookie_jar,
-            "user_agent": self.pyfile.plugin.req.user_agent.decode('utf-8')
+            "user_agent": user_agent
         }
 
         result = self.decrypt_interactive(params, timeout=300)

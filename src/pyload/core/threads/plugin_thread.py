@@ -76,7 +76,11 @@ class PluginThread(Thread):
 
     def get_debug_dump(self, pyfile):
         version = self.pyload.api.get_server_version()
-        dump = f"pyLoad {version} Debug Report of {pyfile.pluginname} {pyfile.plugin.__version__} \n\nTRACEBACK:\n {traceback.format_exc()} \n\nFRAMESTACK:\n"
+
+        dump = f"pyLoad {version} Debug Report of {pyfile.pluginname}"
+        if hasattr(pyfile, 'plugin'):
+            pluginversion = pyfile.plugin.__version__
+            dump += f" {pluginversion} \n\nTRACEBACK:\n {traceback.format_exc()} \n\nFRAMESTACK:\n"
 
         tb = exc_info()[2]
         stack = []
@@ -100,14 +104,15 @@ class PluginThread(Thread):
 
         dump += "\n\n_PLUGIN OBJECT DUMP: \n\n"
 
-        for name in dir(pyfile.plugin):
-            attr = getattr(pyfile.plugin, name)
-            if not name.endswith("__") and not isinstance(attr, MethodType):
-                dump += f"\t{name:20} = "
-                try:
-                    dump += pprint.pformat(attr) + "\n"
-                except Exception as exc:
-                    dump += f"<ERROR WHILE PRINTING VALUE> {exc}\n"
+        if hasattr(pyfile, 'plugin'):
+            for name in dir(pyfile.plugin):
+                attr = getattr(pyfile.plugin, name)
+                if not name.endswith("__") and not isinstance(attr, MethodType):
+                    dump += f"\t{name:20} = "
+                    try:
+                        dump += pprint.pformat(attr) + "\n"
+                    except Exception as exc:
+                        dump += f"<ERROR WHILE PRINTING VALUE> {exc}\n"
 
         dump += "\n_PYFILE OBJECT DUMP: \n\n"
 

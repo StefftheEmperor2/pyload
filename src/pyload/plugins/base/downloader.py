@@ -173,7 +173,10 @@ class BaseDownloader(BaseHoster):
                 or maxredirs
             )  # TODO: Remove `int` in 0.6.x
 
-        header = self.load(url, just_header=True)
+        cookie_jar = None
+        if hasattr(self, 'cookie_jar'):
+            cookie_jar = self.cookie_jar
+        header = self.load(url, just_header=True, cookies=cookie_jar)
 
         for i in range(1, maxredirs):
             if not redirect or header.get("connection") == "close":

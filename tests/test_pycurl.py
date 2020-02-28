@@ -21,12 +21,12 @@ class CoreMock(Core):
 
 buffer = BytesIO()
 header_buffer = BytesIO()
-cookie_jar = CookieJar()
 core = CoreMock()
 
 file_manager = FileManager(core)
 pyfile = PyFile(file_manager, 0, '', '', 0, 0, None, None, None, 0)
 plugin = TurbobitNet(pyfile)
+cookie_jar = plugin.cookie_jar
 #
 # c = pycurl.Curl()
 # c.setopt(c.URL, 'https://turbobit.net/6gpwt75gywzv.html')
@@ -44,7 +44,7 @@ plugin = TurbobitNet(pyfile)
 
 request = HTTPRequest(cookies=cookie_jar)
 
-r = '03AERD8XrVzVSK01H_T083EOBETeMzXeXjE3f9yhHvOrJcwMUhk2bBtTtiPprxt6-hVcUNPtc_CQR4b87cghyYGWt1_Qg6TQtiu6QCOavYHYAX9FlUhGmWH84FYTK974bEL5n6BIsG2V7JqucGUNjIXRwN8zjHa-CAf-9xWFrE1H94fBEGOXgQbMpIGjlvbDFCBYXXwEE0Z43Rii5wOO-OezVtLszA1mni9Z1NzofO07qWe-1tRmpGwM13N0PjKPktp9QfOEnpXInXCaGsmqWVdTuPC_-yV7o06SGfh15NIK0IHRutQICw1plA9QL6Fad1GYOCKUAGsd-k_P7Mat3WHT9HkGG5rI2bl1srsFXPofTgAdq86xayc_AFg785dWPJ5P95mduo-BY3he6KoDKqMrvogjdPAynp5Q'
+r = '03AERD8XpxWcb3J9D6otuJNPJ5kl6VDgNKeekbUJdZHMX4iEWogAEMTz2zyP-D-rzxOsOwrX7onAzO0Wv6m8XlNHmgWF5Uwhuu9zs8cCaGUNTlhIfJofgd9FoXYZgzilnqGT5gBaULLB0F-7tKnEmJw4jJIDKekuJCcaCPW17xj1ciVdkusi4lCZxvREZ6N3SG2shaZ2brv6rhpfNjEKQwzldZLiuY1s6-2ZKj_jgng2OLmf49FUuNNYURbbdHtw6YhD_xHHtAgXQ3m-lKvw640Hf7aiLXWILURK8akZ9d4mN49kncBzHPit0ZS_58A-KelvsRuYXFtgMk7V2K9hiWG3d7hxuPxBTrFASWciTb9dzEmnPNGJh0OHnuTBhroosrki7mgvfSI6HD'
 
 post = {
     "captcha_type": "recaptcha2",
@@ -66,6 +66,7 @@ cookie_jar.add_key_value('user_lang', 'en')
 cookie_jar.add_key_value('file_marker', unquote_plus('a1eae0906bd35c74de1bdeda4327d43b273f7004%7E6gpwt75gywzv'))
 cookie_jar.add_key_value('refuid', unquote_plus('4658206b362392aa122e2edfe9eb67689531b800%7ED33F45075D72FEFA6F332C95E493B1FD'))
 """
+"""
 plugin.load(
     url='https://turbobit.net/6gpwt75gywzv.html',
     cookies=cookie_jar
@@ -79,14 +80,15 @@ response = plugin.load(
     cookies=cookie_jar
     )
 sess = cookie_jar['kohanasession']
+"""
 response = plugin.load(
     url='https://turbobit.net/download/free/6gpwt75gywzv',
     post=post,
     cookies=cookie_jar
     )
-new_sess = cookie_jar['kohanasession']
-if sess != new_sess:
-    print('session!?')
+#new_sess = cookie_jar['kohanasession']
+#if sess != new_sess:
+#    print('session!?')
 
 print(response)
 
@@ -117,7 +119,9 @@ print(body.decode('utf-8'))"""
 
 """
 cookie_jar.set_domain('.recaptcha.lw-rulez.de')
-plugin.load(url='recaptcha.lw-rulez.de', cookies=cookie_jar)
-plugin.load(url='recaptcha.lw-rulez.de', cookies=cookie_jar, post={"bla": "test", "fooäöü": "baröä"})
+response = plugin.load(url='http://recaptcha.lw-rulez.de/', cookies=cookie_jar)
+print(response)
+response = plugin.load(url='http://recaptcha.lw-rulez.de/', cookies=cookie_jar, post={"bla": "test", "fooäöü": "baröä"})
+print(response)
 """
 

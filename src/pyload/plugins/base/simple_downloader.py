@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-
-from pyload.core.network.http.exceptions import BadHeader
-from pyload.core.network.request_factory import get_url
+import pycurl
 from pyload.core.network.cookie_jar import CookieJar
+from pyload.core.network.http.exceptions import BadHeader
+from pyload.core.network.http.http_request import HTTPRequestOptionStore
+from pyload.core.network.request_factory import get_url
 from pyload.core.utils import parse
-
-from ..helpers import replace_patterns
 from .downloader import BaseDownloader
+from ..helpers import replace_patterns
 
 
 class SimpleDownloader(BaseDownloader):
@@ -149,12 +149,11 @@ class SimpleDownloader(BaseDownloader):
     def api_info(cls, url):
         return {}
 
-    @classmethod
-    def get_info(cls, url="", html="", cookie_jar=None):
+    def get_info(self, url="", html="", cookie_jar=None):
         if cookie_jar is None:
-            cookie_jar = CookieJar.factory(cls.COOKIES)
-        info = super(SimpleDownloader, cls).get_info(url)
-        info.update(cls.api_info(url))
+            cookie_jar = CookieJar.factory(self.COOKIES)
+        info = super(SimpleDownloader, self).get_info(url)
+        info.update(self.api_info(url))
 
         if not html and info["status"] != 2:
             if not url:
@@ -163,7 +162,7 @@ class SimpleDownloader(BaseDownloader):
 
             elif info["status"] in (3, 7):
                 try:
-                    html = get_url(url, cookies=cookie_jar, decode=cls.TEXT_ENCODING)
+                    html = self.load(url, cookies=cookie_jar, decode=self.TEXT_ENCODING)
 
                 except BadHeader as exc:
                     info["error"] = "{}: {}".format(exc.code, exc.content)
@@ -172,12 +171,12 @@ class SimpleDownloader(BaseDownloader):
                     pass
 
         if html:
-            if cls.OFFLINE_PATTERN and re.search(cls.OFFLINE_PATTERN, html) is not None:
+            if self.OFFLINE_PATTERN and re.search(self.OFFLINE_PATTERN, html) is not None:
                 info["status"] = 1
 
             elif (
-                cls.TEMP_OFFLINE_PATTERN
-                and re.search(cls.TEMP_OFFLINE_PATTERN, html) is not None
+                self.TEMP_OFFLINE_PATTERN
+                and re.search(self.TEMP_OFFLINE_PATTERN, html) is not None
             ):
                 info["status"] = 6
 
@@ -189,7 +188,7 @@ class SimpleDownloader(BaseDownloader):
                     "HASHSUM_PATTERN",
                 ):
                     try:
-                        attr = getattr(cls, pattern)
+                        attr = getattr(self, pattern)
                         pdict = re.search(attr, html).groupdict()
 
                         if all(True for k in pdict if k not in info["pattern"]):
@@ -202,7 +201,7 @@ class SimpleDownloader(BaseDownloader):
                         info["status"] = 2
 
         if "N" in info["pattern"]:
-            name = replace_patterns(info["pattern"]["N"], cls.NAME_REPLACEMENTS)
+            name = replace_patterns(info["pattern"]["N"], self.NAME_REPLACEMENTS)
             info["name"] = parse.name(name)
 
         if "S" in info["pattern"]:
@@ -210,7 +209,7 @@ class SimpleDownloader(BaseDownloader):
                 info["pattern"]["S"] + info["pattern"]["U"]
                 if "U" in info["pattern"]
                 else info["pattern"]["S"],
-                cls.SIZE_REPLACEMENTS,
+                self.SIZE_REPLACEMENTS,
             )
             info["size"] = parse.bytesize(size)
 
@@ -240,8 +239,6 @@ class SimpleDownloader(BaseDownloader):
 
         if self.LOGIN_ACCOUNT and not self.account:
             self.fail(self._("Required account not found"))
-
-        self.req.set_option("timeout", 120)
 
         if self.LINK_PATTERN:
             if self.LINK_FREE_PATTERN is None:
@@ -275,9 +272,9 @@ class SimpleDownloader(BaseDownloader):
     def _preload(self):
         if self.data:
             return
-        self.data = self.load(
-            self.pyfile.url, cookies=self.cookie_jar, referer=False, decode=self.TEXT_ENCODING
-        )
+        options = HTTPRequestOptionStore()
+        options.set(pycurl.TIMEOUT, 30)
+        self.data = self.load(self.pyfile.url, cookies=self.cookie_jar, referer=False, decode=self.TEXT_ENCODING, options=options)
 
     def process(self, pyfile):
         self._prepare()

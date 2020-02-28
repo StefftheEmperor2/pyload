@@ -96,6 +96,8 @@ class Cookie(object):
 
     def get_formatted(self):
         domain = self.domain if self.domain is not None else '.'
+        if type(domain) == bytes:
+            domain = domain.decode('UTF-8')
         if self.with_subdomains is not None:
             if self.with_subdomains:
                 with_subdomains = 'TRUE'
@@ -105,6 +107,8 @@ class Cookie(object):
             with_subdomains = 'TRUE'
 
         path = self.path if self.path is not None else '/'
+        if type(path) == bytes:
+            path = path.decode('UTF-8')
         if self.secure is not None:
             if self.secure:
                 secure = 'TRUE'
@@ -118,8 +122,8 @@ class Cookie(object):
         else:
             expire_timestamp = int((datetime.fromtimestamp(int(time.time()))
                                     + timedelta(hours=744)).timestamp())
-
-        return f"{domain}\t{with_subdomains}\t{path}\t{secure}\t{expire_timestamp}\t{self.name}\t{quote_plus(self.value)}".encode(
+        encoded_value = quote_plus(self.value)
+        return f"{domain}\t{with_subdomains}\t{path}\t{secure}\t{expire_timestamp}\t{self.name}\t{encoded_value}".encode(
             'UTF-8')
 
     def get_expire_timestamp(self):
@@ -207,6 +211,8 @@ class CookieJar:
                     cookie_object.name = cookie[1]
                     cookie_object.value = cookie[2]
                     cookie_jar.add_cookie(cookie_object)
+        elif type(cookie_jar) is bool:
+            cookie_jar = CookieJar()
 
         return cookie_jar
 

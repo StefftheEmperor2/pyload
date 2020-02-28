@@ -1093,7 +1093,7 @@ class Api:
 
     @legacy("setCaptchaResult")
     @permission(Perms.STATUS)
-    def set_captcha_result(self, tid, result, cookie_jar):
+    def set_captcha_result(self, tid, result, cookie_jar=None):
         """
         Set result for a captcha task.
 

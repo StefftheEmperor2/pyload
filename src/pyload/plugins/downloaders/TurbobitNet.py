@@ -51,7 +51,7 @@ class TurbobitNet(SimpleDownloader):
 
     @property
     def free_url(self):
-        return "http://turbobit.net/download/free/{}".format(
+        return "https://turbobit.net/download/free/{}".format(
             self.info["pattern"]["ID"]
         )
 

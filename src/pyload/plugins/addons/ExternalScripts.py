@@ -197,17 +197,23 @@ class ExternalScripts(BaseAddon):
         self.call_script("download_preparing", *args)
 
     def download_failed(self, pyfile):
-        file = pyfile.plugin.last_download
+        file = None
+        if hasattr(pyfile, 'plugin'):
+            file = pyfile.plugin.last_download
         args = [pyfile.id, pyfile.name, file, pyfile.pluginname, pyfile.url]
         self.call_script("download_failed", *args)
 
     def download_finished(self, pyfile):
-        file = pyfile.plugin.last_download
+        file = None
+        if hasattr(pyfile, 'plugin'):
+            file = pyfile.plugin.last_download
         args = [pyfile.id, pyfile.name, file, pyfile.pluginname, pyfile.url]
         self.call_script("download_finished", *args)
 
     def download_processed(self, pyfile):
-        file = pyfile.plugin.last_download
+        file = None
+        if hasattr(pyfile, 'plugin'):
+            file = pyfile.plugin.last_download
         args = [pyfile.id, pyfile.name, file, pyfile.pluginname, pyfile.url]
         self.call_script("download_processed", *args)
 

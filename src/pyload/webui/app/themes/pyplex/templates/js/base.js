@@ -451,7 +451,7 @@ function submit_positional_captcha(c) {
 }
 
 function submit_interactive_captcha(data, cookie, domain) {
-    if (data.constructor !== "".constructor)
+    if (typeof data == 'undefined' || data.constructor !== "".constructor)
         return;
     $("#cap_box #cap_result").val(JSON.stringify({"data": data, "cookie": cookie, "domain": domain}));
     return submit_captcha();
@@ -494,7 +494,6 @@ interactiveCaptchaHandler.prototype.startInteraction = function(url, params) {
 interactiveCaptchaHandler.prototype.windowEventListener = function(e) {
     var interactiveHandlerInstance = e.data;
     var requestMessage = JSON.parse(e.originalEvent.data);
-
     if(requestMessage.actionCode === interactiveHandlerInstance.actionCodes.submitResponse) {
         // We got the response! pass it to the callback function
         interactiveHandlerInstance._captchaResponseCallback(requestMessage.params.response, requestMessage.params.cookie, requestMessage.params.domain);

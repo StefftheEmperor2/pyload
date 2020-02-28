@@ -30,27 +30,3 @@ class UserAgentSwitcher(BaseAddon):
     __description__ = """Custom user-agent"""
     __license__ = "GPLv3"
     __authors__ = [("Walter Purcaro", "vuolter@gmail.com")]
-
-    def download_preparing(self, pyfile):
-        if not isinstance(pyfile.plugin.req, HTTPRequest) and not isinstance(
-            pyfile.plugin.req, Browser
-        ):
-            return
-
-        connecttimeout = self.config.get("connecttimeout")
-        maxredirs = self.config.get("maxredirs")
-        useragent = self.config.get("useragent")
-
-        if connecttimeout:
-            self.log_debug(
-                "Setting connection timeout to {} seconds".format(connecttimeout)
-            )
-            pyfile.plugin.req.http.c.setopt(pycurl.CONNECTTIMEOUT, connecttimeout)
-
-        if maxredirs:
-            self.log_debug(f"Setting maximum redirections to {maxredirs}")
-            pyfile.plugin.req.http.c.setopt(pycurl.MAXREDIRS, maxredirs)
-
-        if useragent:
-            self.log_debug(f"Use custom user-agent string `{useragent}`")
-            pyfile.plugin.req.http.c.setopt(pycurl.USERAGENT, useragent.encode())

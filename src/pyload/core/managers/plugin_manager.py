@@ -401,6 +401,8 @@ class PluginManager:
                     module_type = 'addons'
                 elif module_type == 'account':
                     module_type = 'accounts'
+                elif module_type == 'decrypter':
+                    module_type = 'decrypters'
                 elif module_type == 'downloader':
                     module_type = 'downloaders'
 

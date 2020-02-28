@@ -7,6 +7,7 @@ import os
 import pycurl
 from pyload.core.network.exceptions import Fail, Skip
 from pyload.core.network.request_factory import get_request
+from pyload.core.network.http.http_request import HTTPRequestOptionStore
 from pyload.core.network.cookie_jar import CookieJar
 from pyload.core.utils import fs
 from pyload.core.utils.old import decode, fixurl, html_unescape
@@ -61,7 +62,6 @@ class BasePlugin:
 
         #: Browser instance, see `network.Browser`
         self.req = self.pyload.request_factory.get_request(self.classname)
-        self.req.set_option("timeout", 60)  # TODO: Remove in 0.6.x
 
         #: Last loaded html
         self.last_html = ""
@@ -164,7 +164,8 @@ class BasePlugin:
         multipart=False,
         redirect=True,
         req=None,
-        content_type=None
+        content_type=None,
+        options=None
     ):
         """
         Load content at url and returns it.
@@ -181,20 +182,16 @@ class BasePlugin:
 
         url = fixurl(url, unquote=True)  #: Recheck in 0.6.x
 
-        if req is False:
-            req = get_request()
-            req.set_option("timeout", 60)  # TODO: Remove in 0.6.x
+        browser = self.req
 
-        elif not req:
-            req = self.req
-
-        http_req = self.req.http if hasattr(self.req, "http") else self.req
+        if options is None:
+            options = HTTPRequestOptionStore()
 
         follow_location = False
         # TODO: Move to network in 0.6.x
         if not redirect:
             # NOTE: req can be a HTTPRequest or a Browser object
-            http_req.c.setopt(pycurl.FOLLOWLOCATION, 0)
+            options.set(pycurl.FOLLOWLOCATION, 0)
             follow_location = False
 
         elif type(redirect) == bool:
@@ -205,13 +202,13 @@ class BasePlugin:
             else:
                 config_option = int(config_option)
 
-            http_req.c.setopt(pycurl.MAXREDIRS, config_option or 5)
+            options.set(pycurl.MAXREDIRS, config_option or 5)
         elif type(redirect) == int:
             follow_location = True
             # NOTE: req can be a HTTPRequest or a Browser object
-            http_req.c.setopt(pycurl.MAXREDIRS, redirect)
+            options.set(pycurl.MAXREDIRS, redirect)
 
-        html = req.load(
+        response = browser.load(
             url,
             get,
             post,
@@ -222,13 +219,15 @@ class BasePlugin:
             decode is True,
             follow_location,
             True,
-            content_type
+            content_type,
+            options=options
         )  # TODO: Fix network multipart in 0.6.x
+        html = response.body
 
-        response_cookies = req.cookie_jar
+        response_cookies = response.cookie_jar
 
-        if isinstance(cookies, CookieJar):
-            cookies.add_cookies(response_cookies)
+        if isinstance(self.cookie_jar, CookieJar) and isinstance(response_cookies, CookieJar):
+            self.cookie_jar.add_cookies(response_cookies)
 
         # TODO: Move to network in 0.6.x
         if decode:
@@ -243,9 +242,9 @@ class BasePlugin:
             self.dump_html()
 
         # TODO: Move to network in 0.6.x
-        header = {"code": req.code, "url": req.last_effective_url}
+        header = {"code": response.code, "url": response.effective_url}
         # NOTE: req can be a HTTPRequest or a Browser object
-        header.update(parse_html_header(http_req.header.decode('utf-8')))
+        header.update(parse_html_header(response.header.decode('utf-8')))
 
         self.last_header = header
 
