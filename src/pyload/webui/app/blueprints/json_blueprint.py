@@ -174,16 +174,17 @@ def add_package():
     pw = flask.request.form.get("add_password", "").strip("\n\r")
 
     try:
+
         f = flask.request.files["add_file"]
+        if f.content_length > 0:
+            if not name or name == "New Package":
+                name = f.name
 
-        if not name or name == "New Package":
-            name = f.name
-
-        fpath = os.path.join(
-            api.get_config_value("general", "storage_folder"), "tmp_" + f.filename
-        )
-        f.save(fpath)
-        links.insert(0, fpath)
+            fpath = os.path.join(
+                api.get_config_value("general", "storage_folder"), "tmp_" + f.filename
+            )
+            f.save(fpath)
+            links.insert(0, fpath)
 
     except Exception:
         pass

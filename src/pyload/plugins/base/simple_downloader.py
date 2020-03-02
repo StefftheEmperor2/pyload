@@ -143,6 +143,7 @@ class SimpleDownloader(BaseDownloader):
 
     def __init__(self, pyfile):
         super().__init__(pyfile)
+        self.referer = None
         self.cookie_jar = CookieJar.factory(self.COOKIES)
 
     @classmethod
@@ -163,7 +164,7 @@ class SimpleDownloader(BaseDownloader):
             elif info["status"] in (3, 7):
                 try:
                     html = self.load(url, cookies=cookie_jar, decode=self.TEXT_ENCODING)
-
+                    self.referer = url
                 except BadHeader as exc:
                     info["error"] = "{}: {}".format(exc.code, exc.content)
 
@@ -317,7 +318,7 @@ class SimpleDownloader(BaseDownloader):
 
         if self.link and not self.last_download:
             self.log_info(self._("Downloading file..."))
-            self.download(self.link, disposition=self.DISPOSITION)
+            self.download(self.link, referer=self.referer, cookie_jar=self.cookie_jar, disposition=self.DISPOSITION)
 
     def _check_download(self):
         super()._check_download()

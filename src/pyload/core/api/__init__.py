@@ -667,7 +667,7 @@ class Api:
 
         :param fids: list of file ids
         """
-        for id in fids:
+        for id in fids.values():
             self.pyload.files.delete_link(int(id))
 
         self.pyload.files.save()
@@ -1407,12 +1407,8 @@ class Api:
         self.pyload.db.set_permission(user, permission)
         self.pyload.db.set_role(user, role)
 
-    def addcrypted2(self, *args, api, jk, encrypted, package):
-        deferred = self.pyload.scheduler.get_deferred()
+    def addcrypted2(self, *args, api, javascript_key, encrypted, package):
+        evaluated_key = self.pyload.eval_js(f"(function () {{ {javascript_key}; return f(); }})()")
+        add_crypted2(evaluated_key, api=api, encrypted=encrypted, package=package)
 
-        deferred.add_callback(add_crypted2, api=api, jk=jk, encrypted=encrypted, package=package)
-        result = self.pyload.scheduler.add_job(0, eval_js, [f"function() {{ {jk}; return f(); }}"],
-                                      threaded=False, deferred=deferred)
-
-        deferred.wait()
-        return str(deferred.result)
+        return 'Success'

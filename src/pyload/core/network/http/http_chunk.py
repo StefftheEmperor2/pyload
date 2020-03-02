@@ -107,14 +107,15 @@ class ChunkInfo:
 class HTTPChunk(HTTPRequest):
     def __init__(self, id, parent, range=None, resume=False):
         self.id = id
-        self.p = parent  #: HTTPDownload instance
+        self.parent = parent  #: HTTPDownload instance
         self.range = range  #: tuple (start, end)
         self.resume = resume
         self.log = parent.log
 
         self.size = range[1] - range[0] if range else -1
         self.arrived = 0
-        self.last_url = self.p.referer
+        self.last_url = self.parent.referer
+        self._user_agent = None
 
         self.c = pycurl.Curl()
 
@@ -124,7 +125,7 @@ class HTTPChunk(HTTPRequest):
         self.fp = None  #: file handle
 
         self.init_handle()
-        self.set_interface(self.p.options)
+        self.set_interface(self.parent.options)
 
         self.BOMChecked = False  #: check and remove byte order mark
 
@@ -137,23 +138,23 @@ class HTTPChunk(HTTPRequest):
         return f"<HTTPChunk id={self.id}, size={self.size}, arrived={self.arrived}>"
 
     @property
-    def cj(self):
-        return self.p.cj
+    def cookie_jar(self):
+        return self.parent.cookie_jar
 
     def get_handle(self):
         """
         returns a Curl handle ready to use for perform/multiperform.
         """
         self.set_request_context(
-            self.p.url, self.p.get, self.p.post, self.p.referer, self.p.cj
+            self.parent.url, self.parent.get, self.parent.post, self.parent.referer, self.parent.cookie_jar
         )
         self.c.setopt(pycurl.WRITEFUNCTION, self.write_body)
         self.c.setopt(pycurl.HEADERFUNCTION, self.write_header)
-
+        self.c.setopt(pycurl.USERAGENT, self.user_agent)
         # request all bytes, since some servers in russia seems to have a defect
         # arihmetic unit
 
-        fs_name = self.p.info.get_chunk_name(self.id)
+        fs_name = self.parent.info.get_chunk_name(self.id)
         if self.resume:
             self.fp = open(fs_name, mode="ab")
             self.arrived = self.fp.tell()
@@ -167,11 +168,11 @@ class HTTPChunk(HTTPRequest):
 
                 start = self.arrived + self.range[0]
                 if (
-                    self.id == len(self.p.info.chunks) - 1
+                    self.id == len(self.parent.info.chunks) - 1
                 ):  #: as last chunk dont set end range, so we get everything
                     end = ""
                 else:
-                    end = min(self.range[1] + 1, self.p.size - 1)
+                    end = min(self.range[1] + 1, self.parent.size - 1)
 
                 range = f"{start}-{end}".encode()
 
@@ -184,10 +185,10 @@ class HTTPChunk(HTTPRequest):
         else:
             if self.range:
                 start = self.range[0]
-                if self.id == len(self.p.info.chunks) - 1:  #: see above
+                if self.id == len(self.parent.info.chunks) - 1:  #: see above
                     end = ""
                 else:
-                    end = min(self.range[1] + 1, self.p.size - 1)
+                    end = min(self.range[1] + 1, self.parent.size - 1)
 
                 range = f"{start}-{end}"
 
@@ -208,8 +209,8 @@ class HTTPChunk(HTTPRequest):
         elif not self.range and buf.startswith(b"150") and b"data connection" in buf:
             size = re.search(rb"(\d+) bytes", buf)
             if size:
-                self.p.size = int(size.group(1))
-                self.p.chunk_support = True
+                self.parent.size = int(size.group(1))
+                self.parent.chunk_support = True
 
         self.header_parsed = True
 
@@ -231,8 +232,8 @@ class HTTPChunk(HTTPRequest):
 
         self.fp.write(buf)
 
-        if self.p.bucket:
-            time.sleep(self.p.bucket.consumed(size))
+        if self.parent.bucket:
+            time.sleep(self.parent.bucket.consumed(size))
         else:
             # Avoid small buffers, increasing sleep time slowly if buffer size gets smaller
             # otherwise reduce sleep time percentual (values are based on tests)
@@ -261,16 +262,16 @@ class HTTPChunk(HTTPRequest):
                 line = line.decode('utf-8')
 
             if line.startswith("accept-ranges") and "bytes" in line:
-                self.p.chunk_support = True
+                self.parent.chunk_support = True
 
             if line.startswith("content-disposition") and "filename=" in line:
                 name = orgline.partition("filename=")[2]
                 name = name.replace('"', "").replace("'", "").replace(";", "").strip()
-                self.p.name_disposition = name
+                self.parent.name_disposition = name
                 self.log.debug(f"Content-Disposition: {name}")
 
             if not self.resume and line.startswith("content-length"):
-                self.p.size = int(line.split(":")[1])
+                self.parent.size = int(line.split(":")[1])
 
         self.header_parsed = True
 

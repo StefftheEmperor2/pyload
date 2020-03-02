@@ -18,6 +18,7 @@ class Deferred:
     def __init__(self):
         self.call = []
         self.result = ()
+        self._is_done = False
 
     def add_callback(self, f, *cargs, **ckwargs):
         self.call.append((f, cargs, ckwargs))
@@ -32,8 +33,15 @@ class Deferred:
             f(*args, **kwargs)
 
     def wait(self):
-        while not self.result:
+        while not self.is_done:
             time.sleep(0.1)
+
+    def set_is_done(self):
+        self._is_done = True
+
+    @property
+    def is_done(self):
+        return self._is_done
 
 
 class Scheduler:
@@ -99,6 +107,7 @@ class Job:
             return
         else:
             self.deferred.callback(ret)
+            self.deferred.set_is_done()
 
     def start(self):
         if self.threaded:

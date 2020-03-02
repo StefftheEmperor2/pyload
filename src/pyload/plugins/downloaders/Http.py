@@ -31,40 +31,11 @@ class Http(BaseDownloader):
         url = re.sub(r"^(jd|py)", "http", pyfile.url)
         netloc = urllib.parse.urlparse(url).netloc
 
-        for _ in range(2):
-            try:
-                self.download(url, ref=False, disposition=True)
-
-            except BadHeader as exc:
-                if exc.code not in (401, 403, 404, 410):
-                    raise
-
-            if self.req.code in (404, 410):
-                self.offline()
-
-            elif self.req.code in (401, 403):
-                self.log_debug(
-                    "Auth required", f"Received HTTP status code: {self.req.code}"
-                )
-
-                # TODO: Recheck in 0.6.x
-                if self.account:
-                    servers = [x["login"] for x in self.account.get_all_accounts()]
-                else:
-                    servers = []
-
-                if netloc in servers:
-                    self.log_debug(f"Logging on to {netloc}")
-                    self.req.add_auth(self.account.get_login("password"))
-
-                else:
-                    pwd = self.get_password()
-                    if ":" in pwd:
-                        self.req.add_auth(pwd)
-                    else:
-                        self.fail(self._("Authorization required"))
-            else:
-                break
+        try:
+            self.download(url, referer=False, disposition=True)
+        except BadHeader as exc:
+            if exc.code not in (401, 403, 404, 410):
+                raise
 
         self.check_download()
 

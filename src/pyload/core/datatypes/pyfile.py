@@ -86,11 +86,13 @@ class PyFile:
         """
         if not self.plugin:
             self.pluginmodule = self.m.pyload.plugin_manager.get_plugin(self.pluginname)
-            self.pluginclass = getattr(
-                self.pluginmodule,
-                self.m.pyload.plugin_manager.get_plugin_name(self.pluginname),
-            )
-            self.plugin = self.pluginclass(self)
+            plugin_name = self.m.pyload.plugin_manager.get_plugin_name(self.pluginname)
+            if hasattr(self.pluginmodule, plugin_name):
+                self.pluginclass = getattr(
+                    self.pluginmodule,
+                    plugin_name
+                )
+                self.plugin = self.pluginclass(self)
 
     @lock
     def has_plugin(self):

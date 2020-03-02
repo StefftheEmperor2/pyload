@@ -7,7 +7,7 @@ from ..utils.old import lock
 from .browser import Browser
 from .bucket import Bucket
 from .cookie_jar import CookieJar
-from .http.http_request import HTTPRequest
+from .http.http_request import HTTPRequest, HTTPRequestOptionStore
 from .xdcc.request import XDCCRequest
 
 DEFAULT_REQUEST = None
@@ -33,13 +33,13 @@ class RequestFactory:
     @lock
     def get_request(self, plugin_name, account=None, type="HTTP", **kwargs):
         options = self.get_options()
-        options.update(kwargs)  #: submit kwargs as additional options
+        options.add(kwargs)  #: submit kwargs as additional options
 
         if type == "XDCC":
             req = XDCCRequest(self.bucket, options)
 
         else:
-            req = Browser(self.bucket, options)
+            req = Browser(self.bucket)
 
             if account:
                 cookie_jar = self.get_cookie_jar(plugin_name, account)
@@ -113,11 +113,11 @@ class RequestFactory:
         """
         returns options needed for pycurl.
         """
-        return {
-            "interface": self.iface(),
-            "proxies": self.get_proxies(),
-            "ipv6": self.pyload.config.get("download", "ipv6"),
-        }
+        options = HTTPRequestOptionStore()
+        options.set("interface", self.iface())
+        options.set('proxies', self.get_proxies())
+        options.set('ipv6', self.pyload.config.get("download", "ipv6"))
+        return options
 
     def update_bucket(self):
         """

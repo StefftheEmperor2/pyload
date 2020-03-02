@@ -165,7 +165,8 @@ class BasePlugin:
         redirect=True,
         req=None,
         content_type=None,
-        options=None
+        options=None,
+        headers=None
     ):
         """
         Load content at url and returns it.
@@ -220,7 +221,8 @@ class BasePlugin:
             follow_location,
             True,
             content_type,
-            options=options
+            options=options,
+            headers=headers,
         )  # TODO: Fix network multipart in 0.6.x
         html = response.body
 

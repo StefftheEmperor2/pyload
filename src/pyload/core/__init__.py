@@ -15,12 +15,13 @@ import locale
 import os
 import tempfile
 import time
+import mimetypes
 
 from pyload import PKGDIR, APPID, USERHOMEDIR
 from .. import __version__ as PYLOAD_VERSION
 from .. import __version_info__ as PYLOAD_VERSION_INFO
 from .utils import format, fs
-from .utils.misc import reversemap
+from .utils.misc import reversemap, eval_js as eval_js_util
 from threading import Event
 from pyload.core.network.request_factory import RequestFactory
 
@@ -102,6 +103,7 @@ class Core:
 
         # TODO: Remove...
         self.last_client_connected = 0
+        mimetypes.init()
 
 
     def _init_config(self, userdir, cachedir, storagedir, debug):
@@ -402,3 +404,11 @@ class Core:
             self.files.sync_save()
             self._running.clear()
             # self.evm.fire('pyload:stopped')
+
+    def eval_js(self, javascript_code):
+        deferred = self.scheduler.get_deferred()
+        self.scheduler.add_job(0, eval_js_util, [f"(function() {{ return {javascript_code}; }})()"],
+                               threaded=False, deferred=deferred)
+        deferred.wait()
+
+        return deferred.result[0][0]

@@ -9,7 +9,7 @@ from .http.http_request import HTTPRequest
 from .cookie_jar import CookieJar
 
 class Browser:
-    def __init__(self, bucket=None, options={}):
+    def __init__(self, bucket=None):
         self.log = getLogger(APPID)
 
         self.bucket = bucket
@@ -108,23 +108,31 @@ class Browser:
         resume=False,
         progress_notify=None,
         disposition=False,
+        options=None,
+        cookie_jar=None
     ):
         """
         this can also download ftp.
         """
+        my_cookie_jar = CookieJar()
+        my_cookie_jar.add_cookies(self.cookie_jar)
+        my_cookie_jar.add_cookies(cookie_jar)
         self._size = 0
+        if type(referer) is bool:
+            referer = None
         self.dl = HTTPDownload(
             url,
             filename,
             get,
             post,
-            self.last_effective_url if referer else None,
-            self.cookie_jar if cookies else None,
+            referer,
+            my_cookie_jar if cookies else None,
             self.bucket,
-            self.options,
+            options,
             progress_notify,
             disposition,
         )
+
         name = self.dl.download(chunks, resume)
         self._size = self.dl.size
 

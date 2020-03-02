@@ -3,6 +3,7 @@
 
 from threading import RLock
 
+from enum import IntEnum
 from ..datatypes.enums import Destination
 from ..utils.old import lock
 from .event_manager import InsertEvent, ReloadAllEvent, RemoveEvent, UpdateEvent
@@ -112,7 +113,9 @@ class FileManager:
         """
         gets a data representation without links.
         """
-        queue = queue.value
+        if isinstance(queue, IntEnum):
+            queue = queue.value
+
         packs = self.pyload.db.get_all_packages(queue)
         for x in self.package_cache.values():
             if x.queue != queue or x.id not in packs:

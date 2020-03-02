@@ -11,6 +11,7 @@ from pyload.core.utils.old import safejoin
 
 from ..helpers import exists
 from .hoster import BaseHoster
+import mimetypes
 
 
 class BaseDownloader(BaseHoster):
@@ -219,7 +220,7 @@ class BaseDownloader(BaseHoster):
             return resource
 
     def _download(
-        self, url, filename, get, post, ref, cookies, disposition, resume, chunks
+        self, url, filename, get, post, ref, cookies, disposition, resume, chunks, cookie_jar=None
     ):
         # TODO: Safe-filename check in HTTPDownload in 0.6.x
         filename = os.fsdecode(filename)
@@ -233,6 +234,7 @@ class BaseDownloader(BaseHoster):
         else:
             chunks = min(dl_chunks, chunk_limit)
 
+        options = self.pyload.request_factory.get_options()
         try:
             newname = self.req.http_download(
                 url,
@@ -245,6 +247,8 @@ class BaseDownloader(BaseHoster):
                 resume,
                 self.pyfile.set_progress,
                 disposition,
+                options=options,
+                cookie_jar=cookie_jar
             )
 
         except IOError as exc:
@@ -256,12 +260,7 @@ class BaseDownloader(BaseHoster):
             raise
 
         else:
-            if self.req.code in (404, 410):
-                bad_file = os.path.join(os.path.dirname(filename), newname)
-                if self.remove(bad_file):
-                    return ""
-            else:
-                self.log_info(self._("File saved"))
+            self.log_info(self._("File saved"))
 
             return newname
 
@@ -274,12 +273,13 @@ class BaseDownloader(BaseHoster):
         url,
         get={},
         post={},
-        ref=True,
+        referer=None,
         cookies=True,
         disposition=True,
         resume=None,
         chunks=None,
         fixurl=True,
+        cookie_jar=None,
     ):
         """
         Downloads the content at url to download folder.
@@ -327,7 +327,7 @@ class BaseDownloader(BaseHoster):
         self.check_status()
 
         newname = self._download(
-            dl_url, dl_filename, get, post, ref, cookies, disposition, resume, chunks
+            dl_url, dl_filename, get, post, referer, cookies, disposition, resume, chunks, cookie_jar=cookie_jar
         )
 
         # TODO: Recheck in 0.6.x
@@ -381,20 +381,24 @@ class BaseDownloader(BaseHoster):
 
         #: Produces encoding errors, better log to other file in the future?
         # self.log_debug(f"Content: {content}")
-        for name, rule in rules.items():
-            if isinstance(rule, str):
-                if rule in content:
-                    return name
+        if mimetypes.guess_type(dl_file)[0] in ['text/plain', 'text/html']:
+            for name, rule in rules.items():
+                if isinstance(rule, str):
+                    if rule in content:
+                        return name
 
-            elif hasattr(rule, 'search'):
-                if isinstance(content, str):
-                    m = rule.search(content)
-                else:
-                    m = rule.search(content.decode('utf-8'))
+                elif hasattr(rule, 'search'):
+                    if isinstance(content, str):
+                        m = rule.search(content)
+                    else:
+                        try:
+                            m = rule.search(content.decode('utf-8'))
+                        except UnicodeDecodeError:
+                            pass
 
-                if m is not None:
-                    self.last_check = m
-                    return name
+                    if m is not None:
+                        self.last_check = m
+                        return name
 
     def _check_download(self):
         self.log_info(self._("Checking download..."))

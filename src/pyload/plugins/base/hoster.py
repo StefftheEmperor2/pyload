@@ -45,8 +45,7 @@ class BaseHoster(BasePlugin):
 
     URL_REPLACEMENTS = []
 
-    @classmethod
-    def get_info(cls, url="", html=""):
+    def get_info(self, url="", html="", cookie_jar = None):
         url = fixurl(url, unquote=True)
         info = {
             "name": parse.name(url),
@@ -54,11 +53,11 @@ class BaseHoster(BasePlugin):
             "pattern": {},
             "size": 0,
             "status": 7 if url else 8,
-            "url": replace_patterns(url, cls.URL_REPLACEMENTS),
+            "url": replace_patterns(url, self.URL_REPLACEMENTS),
         }
 
         try:
-            info["pattern"] = re.match(cls.__pattern__, url).groupdict()
+            info["pattern"] = re.match(self.__pattern__, url).groupdict()
 
         except Exception:
             pass

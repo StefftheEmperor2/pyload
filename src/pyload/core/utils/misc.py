@@ -62,7 +62,7 @@ def aes_decrypt(key, encrypted):
     return decrypted.decode('utf-8')
 
 
-def add_crypted2(js_key, *args, api, jk, encrypted, package):
+def add_crypted2(js_key, *args, api, encrypted, package):
     try:
         key_decoded = base64.b16decode(js_key)
 

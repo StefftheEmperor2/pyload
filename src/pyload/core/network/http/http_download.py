@@ -11,7 +11,7 @@ from pyload import APPID
 
 from ..exceptions import Abort
 from .http_chunk import ChunkInfo, HTTPChunk
-from .http_request import BadHeader
+from .http_request import BadHeader, HTTPRequestOptionStore
 
 
 class HTTPDownload:
@@ -26,20 +26,27 @@ class HTTPDownload:
         get={},
         post={},
         referer=None,
-        cj=None,
+        cookie_jar=None,
         bucket=None,
         options={},
         progress_notify=None,
         disposition=False,
+        user_agent=None
     ):
         self.url = url
         self.filename = filename  #: complete file destination, not only name
         self.get = get
         self.post = post
         self.referer = referer
-        self.cj = cj  #: cookiejar if cookies are needed
+        self.cookie_jar = cookie_jar  #: cookiejar if cookies are needed
         self.bucket = bucket
-        self.options = options
+
+        download_options = HTTPRequestOptionStore()
+
+        if options is not None:
+            download_options.add(options)
+
+        self.options = download_options
         self.disposition = disposition
         # all arguments
 

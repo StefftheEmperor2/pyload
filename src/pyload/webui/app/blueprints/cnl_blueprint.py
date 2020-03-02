@@ -91,11 +91,11 @@ def addcrypted2():
         "package", flask.request.form.get("source", flask.request.form.get("referer"))
     )
     encrypted = flask.request.form["crypted"]
-    jk = flask.request.form["jk"]
+    javascript_key = flask.request.form["jk"]
 
     encrypted_decoded = unquote(encrypted.replace(" ", "+"))
 
-    api.addcrypted2(api=api, jk=jk, encrypted=encrypted_decoded, package=package)
+    api.addcrypted2(api=api, javascript_key=javascript_key, encrypted=encrypted_decoded, package=package)
 
     return 'success'
 

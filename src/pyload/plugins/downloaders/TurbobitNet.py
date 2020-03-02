@@ -57,7 +57,7 @@ class TurbobitNet(SimpleDownloader):
 
     def handle_free(self, pyfile):
         self.data = self.load(self.free_url, cookies=self.cookie_jar)
-
+        self.referer = self.free_url
         m = re.search(self.LIMIT_WAIT_PATTERN, self.data)
         if m is not None:
             self.retry(wait=int(m.group(1)))
@@ -75,28 +75,30 @@ class TurbobitNet(SimpleDownloader):
                     self.retry(wait=int(limit_match.group(1)))
                 self.fail(self._("minLimit pattern not found"))
 
-            wait_time = eval_js(m.group(1))
+            wait_time = self.pyload.eval_js(m.group(1))
             self.wait(wait_time)
 
-            self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With: XMLHttpRequest"])
             self.data = self.load(
-                "http://turbobit.net/download/getLinkTimeout/{}".format(
+                "https://turbobit.net/download/getLinkTimeout/{}".format(
                     self.info["pattern"]["ID"]
                 ),
-                ref=self.free_url,
+                referer=self.free_url,
+                cookies=self.cookie_jar,
+                headers=[{'X-Requested-With': 'XMLHttpRequest'}]
             )
-            self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With:"])
 
             if "/download/started/" in self.data:
                 self.data = self.load(
-                    "http://turbobit.net/download/started/{}".format(
+                    "https://turbobit.net/download/started/{}".format(
                         self.info["pattern"]["ID"]
-                    )
+                    ),
+                    cookies=self.cookie_jar
                 )
 
                 m = re.search(self.LINK_FREE_PATTERN, self.data)
                 if m is not None:
-                    self.link = "http://turbobit.net{}".format(m.group(1))
+                    self.referer = self.free_url
+                    self.link = "https://turbobit.net{}".format(m.group(1))
 
     def solve_captcha(self):
         action, inputs = self.parse_html_form("action='#'")

@@ -171,7 +171,7 @@ class BaseAddon(BasePlugin):
 
     #: Deprecated method, use `download_finished` instead (Remove in 0.6.x)
     def download_finished(self, pyfile):
-        return self.download_finished(pyfile)
+        pass
 
     def download_failed(self, pyfile):
         pass
@@ -197,14 +197,14 @@ class BaseAddon(BasePlugin):
 
     #: Deprecated method, use `package_finished` instead (Remove in 0.6.x)
     def package_finished(self, pypack):
-        return self.package_finished(pypack)
+        pass
 
     def before_reconnect(self, ip):
         pass
 
     #: Deprecated method, use `before_reconnect` instead (Remove in 0.6.x)
     def before_reconnecting(self, ip):
-        return self.before_reconnect(ip)
+        pass
 
     def after_reconnect(self, ip, oldip):
         pass

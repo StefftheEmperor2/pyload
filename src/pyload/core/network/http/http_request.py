@@ -113,11 +113,26 @@ class HTTPRequestOptionStore:
     def __len__(self):
         return len(self._store.keys())
 
+    def items(self):
+        options = []
+        for option in self:
+            options.append((option.get_name(), option.get_value()))
+        return options
+
     def set(self, key, value):
         self[key] = value
 
     def get_option_at(self, index):
         return list(self._store.values())[index]
+
+    def add(self, other):
+        if isinstance(other, self.__class__):
+            for option in other:
+                self[option.get_name()] = option.get_value()
+        if type(other) is dict:
+            for k, v in other:
+                self[k] = v
+
 
 class HTTPRequestHeaderStoreIterator:
 
@@ -208,7 +223,15 @@ class HTTPRequestHeaderStore:
     def add(self, other):
         if isinstance(other, HTTPRequestHeaderStore):
             for header in other:
-                self[other.get_name()] = header.get_value()
+                self[header.get_name()] = header.get_value()
+        elif type(other) is list:
+            for header in other:
+                if type(header) is dict:
+                    for k, v in header.items():
+                        self[k] = v
+
+    def set(self, key, value):
+        self[key] = value
 
 class HTTPResponse:
     def __init__(self):
@@ -362,7 +385,7 @@ class HTTPRequest:
     def clear_cookies(self):
         self.c.setopt(pycurl.COOKIELIST, "")
 
-    def set_request_context(self, url, get, post, referer, cookies, multipart=False, content_type=None, options=None):
+    def set_request_context(self, url, get, post, referer, cookies, multipart=False, content_type=None, options=None, headers=None):
         """
         sets everything needed for the request.
         """
@@ -409,7 +432,10 @@ class HTTPRequest:
                         self.c.setopt(pycurl.COOKIELIST, cookie_formatted.decode('utf-8'))
 
         if content_type is not None:
-            self.headers('Content-Type', content_type)
+            self.headers.set('Content-Type', content_type)
+
+        if headers is not None:
+            self.headers.add(headers)
 
         if self.user_agent is not None:
             self.c.setopt(pycurl.USERAGENT, self.user_agent)
@@ -427,12 +453,13 @@ class HTTPRequest:
         follow_location=True,
         save_cookies=True,
         content_type=None,
-        options=None
+        options=None,
+        headers=None
     ):
         """
         load and returns a given page.
         """
-        self.set_request_context(url, get, post, referer, cookies, multipart, content_type=content_type, options=options)
+        self.set_request_context(url, get, post, referer, cookies, multipart, content_type=content_type, options=options, headers=headers)
 
         self.header = bytes()
 
@@ -444,6 +471,7 @@ class HTTPRequest:
         default_headers["Keep-Alive"] = "300"
         default_headers["Expect"] = ""
         default_headers.add(self.headers)
+
         self.c.setopt(pycurl.HTTPHEADER, default_headers.get_list())
 
         if not follow_location:
