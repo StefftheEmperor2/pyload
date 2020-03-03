@@ -248,7 +248,7 @@ class BaseDownloader(BaseHoster):
                 self.pyfile.set_progress,
                 disposition,
                 options=options,
-                cookie_jar=cookie_jar
+                cookie_jar=cookie_jar,
             )
 
         except IOError as exc:
@@ -327,7 +327,16 @@ class BaseDownloader(BaseHoster):
         self.check_status()
 
         newname = self._download(
-            dl_url, dl_filename, get, post, referer, cookies, disposition, resume, chunks, cookie_jar=cookie_jar
+            dl_url,
+            dl_filename,
+            get,
+            post,
+            referer,
+            cookies,
+            disposition,
+            resume,
+            chunks,
+            cookie_jar=cookie_jar,
         )
 
         # TODO: Recheck in 0.6.x

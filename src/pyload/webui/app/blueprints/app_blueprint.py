@@ -8,7 +8,7 @@ import os
 import sys
 import time
 from urllib.parse import unquote
-
+from uuid import uuid1
 import flask
 
 from pyload import PKGDIR
@@ -47,6 +47,20 @@ def render(filename):
 def robots():
     return "User-agent: *\n_disallow: /"
 
+@bp.route("/js/base.js", endpoint="base_js")
+def base_js():
+    core = flask.current_app.config["PYLOAD_API"].pyload
+    uuid = uuid1()
+    session = flask.session
+    template_vars = {
+        "websocket_host": core.config.get("webui", "host"),
+        "websocket_port": core.config.get("webui", "websocket_port"),
+        "websocket_scheme": "wss" if core.config.get("webui", "use_ssl") else "ws",
+        "websocket_id": uuid
+    }
+
+    core.websocket.register_session(uuid, session)
+    return flask.Response(render_template("js/base.js", **template_vars), mimetype="text/javascript")
 
 # TODO: Rewrite login route using flask-login
 @bp.route("/login", methods=["GET", "POST"], endpoint="login")

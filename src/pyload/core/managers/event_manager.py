@@ -106,6 +106,35 @@ class ReloadAllEvent:
     def to_list(self):
         return ["reload", self.destination]
 
+class CoreEvent:
+    def __init__(self, core):
+        self._core = core
+        self._data = None
+
+    def is_equal(self, other):
+        is_equal = True
+        if other is None:
+            is_equal = False
+        else:
+            data = self.get_data()
+            other_data = other.get_data()
+            for key, value in data.items():
+                if other_data[key] != value:
+                    is_equal = False
+                    break
+        return is_equal
+
+    def get_data(self):
+        if self._data is None:
+            self.load_data()
+        return self._data
+
+    def load_data(self):
+        if self._data is None:
+            self._data = self._core.get_json()
+
+    def to_list(self):
+        return ['core']
 
 class AccountUpdateEvent:
     def to_list(self):

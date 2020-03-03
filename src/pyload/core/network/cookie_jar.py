@@ -176,8 +176,9 @@ class CookieJar:
         self.account = account
 
     def add_cookies(self, cookie_list):
-        for cookie in cookie_list:
-            self.add_cookie(cookie)
+        if cookie_list is not None:
+            for cookie in cookie_list:
+                self.add_cookie(cookie)
 
     def add_key_value(self, key, value):
         cookie = Cookie()

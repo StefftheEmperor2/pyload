@@ -24,7 +24,8 @@ from .utils import format, fs
 from .utils.misc import reversemap, eval_js as eval_js_util
 from threading import Event
 from pyload.core.network.request_factory import RequestFactory
-
+from pyload.core.network.websocket import Websocket
+from pyload.core.managers.event_manager import CoreEvent
 
 class Restart(Exception):
     __slots__ = []
@@ -98,7 +99,8 @@ class Core:
         self._init_api()
         self._init_managers()
         self._init_webserver()
-
+        self._init_websocket()
+        self._last_event = None
         atexit.register(self.terminate)
 
         # TODO: Remove...
@@ -155,6 +157,10 @@ class Core:
 
         self.webserver = WebServerThread(self)
 
+    def _init_websocket(self):
+        from pyload.core.threads.websocket_thread import WebsocketServerThread
+        self.websocket = WebsocketServerThread(self.thread_manager)
+        self.websocket.setup()
 
     def _init_database(self, restore):
         from .database import DatabaseThread
@@ -286,6 +292,10 @@ class Core:
             return
         self.webserver.start()
 
+    def _start_websocket(self):
+        if not self.config.get("webui", "enabled"):
+            return
+        self.websocket.start()
 
     def _parse_linkstxt(self):
         link_file = os.path.join(self.userdir, "links.txt")
@@ -334,6 +344,7 @@ class Core:
             # scanner.dump_all_objects(os.path.join(PACKDIR, 'objs.json'))
 
             self._start_webserver()
+            self._start_websocket()
             self._parse_linkstxt()
 
             self.log.debug("*** pyLoad is up and running ***")
@@ -399,11 +410,23 @@ class Core:
 
             self.log.debug("Stopping webserver...")
             self.webserver.stop()
-
+            self.websocket.stop()
         finally:
             self.files.sync_save()
             self._running.clear()
             # self.evm.fire('pyload:stopped')
+
+    def get_json(self):
+        status = self.api.status_server()
+        return status.get_json()
+
+    def notify_change(self):
+        event = CoreEvent(self)
+
+        if not event.is_equal(self._last_event):
+            event.load_data()
+            self._last_event = event
+            self.event_manager.add_event(event)
 
     def eval_js(self, javascript_code):
         deferred = self.scheduler.get_deferred()

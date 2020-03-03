@@ -610,6 +610,8 @@ class FileManager:
                 )
                 self.pyload.addon_manager.package_finished(pyfile.package())
                 pyfile.package().set_finished = True
+                pyfile.package().notify_change()
+
 
     def re_check_package(self, pid):
         """

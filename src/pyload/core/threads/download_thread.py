@@ -58,7 +58,9 @@ class DownloadThread(PluginThread):
                     self._("Download finished: {}").format(pyfile.name)
                 )
                 self.pyload.addon_manager.download_finished(pyfile)
+                pyfile.notify_change()
                 self.pyload.files.check_package_finished(pyfile)
+
 
             except NotImplementedError:
                 self.pyload.log.error(

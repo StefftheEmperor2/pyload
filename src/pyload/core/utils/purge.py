@@ -80,4 +80,21 @@ def uniquify(seq):
     """Remove duplicates from list preserving order."""
     seen = set()
     seen_add = seen.add
-    return type(seq)(x for x in seq if x not in seen and not seen_add(x))
+    uniquified = set()
+    for x in seq:
+        if type(x) is list:
+            x = tuple(x)
+
+        if x not in seen:
+            seen.add(x)
+            uniquified.add(x)
+
+    if type(seq) is list:
+        uniquified_list = []
+        for item in uniquified:
+            uniquified_list.append(item)
+        uniquified = uniquified_list
+    else:
+        uniquify_type = type(seq)
+        uniquified = uniquify_type(uniquified)
+    return uniquified

@@ -2,7 +2,7 @@
 # AUTHOR: RaNaN, mkaay
 
 
-from ..managers.event_manager import UpdateEvent
+from ..managers.event_manager import UpdateEvent, CoreEvent
 from ..utils.old import safepath
 
 
@@ -73,8 +73,55 @@ class PyPackage:
         e = UpdateEvent("pack", self.id, "collector" if not self.queue else "queue")
         self.m.pyload.event_manager.add_event(e)
 
+        self.m.pyload.notify_change()
+
     def __setattr__(self, key, value):
         if key == "folder":
             self._folder = value
         else:
             super(PyPackage, self).__setattr__(key, value)
+
+    def get_progress(self):
+        total = 0
+        progress = 0
+        for file_id in self.get_children():
+            file = self.manager.get_file(file_id)
+            total += file.maxprogress
+            if file.is_finished():
+                file_progress = file.maxprogress
+            else:
+                file_progress = file.progress
+            progress += file_progress
+        return (progress / total) * 100
+
+    def get_downloaded_files(self):
+        downloaded_files = 0
+        for file_id in self.get_children():
+            file = self.manager.get_file(file_id)
+            if file.is_finished():
+                downloaded_files += 1
+        return downloaded_files
+
+    def get_total_size(self):
+        total_size = 0
+        for file_id in self.get_children():
+            file = self.manager.get_file(file_id)
+            total_size += file.get_size()
+        return total_size
+
+    def get_downloaded_size(self):
+        downloaded_size = 0
+        for file_id in self.get_children():
+            file = self.manager.get_file(file_id)
+            downloaded_size += file.get_downloaded_size()
+        return downloaded_size
+
+    def get_json(self):
+        return {
+            "id": self.id,
+            "progress": self.get_progress(),
+            "total_files": len(self.get_children()),
+            "finished_files": self.get_downloaded_files(),
+            "total_size": self.get_total_size(),
+            "downloaded_size": self.get_downloaded_size()
+        }

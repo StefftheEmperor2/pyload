@@ -240,6 +240,7 @@ class Api:
         Unpause server: New Downloads will be started.
         """
         self.pyload.thread_manager.pause = False
+        self.pyload.notify_change()
 
     @legacy("togglePause")
     @permission(Perms.STATUS)
@@ -250,7 +251,9 @@ class Api:
         :return: new pause state
         """
         self.pyload.thread_manager.pause ^= True
-        return self.pyload.thread_manager.pause
+        paused = self.pyload.thread_manager.pause
+        self.pyload.notify_change()
+        return paused
 
     @legacy("toggleReconnect")
     @permission(Perms.STATUS)
@@ -261,7 +264,9 @@ class Api:
         :return: new reconnect state
         """
         self.pyload.config.toggle("reconnect", "enabled")
-        return self.pyload.config.get("reconnect", "enabled")
+        reconnect_enabled = self.pyload.config.get("reconnect", "enabled")
+        self.pyload.notify_change()
+        return reconnect_enabled
 
     @legacy("statusServer")
     @permission(Perms.LIST)
@@ -868,9 +873,13 @@ class Api:
         """
         Aborts all running downloads.
         """
-        pyfiles = self.pyload.files.cache.values()
+        pyfiles = list(self.pyload.files.cache.values())
         for pyfile in pyfiles:
             pyfile.abort_download()
+            pyfile.notify_change()
+        self.pyload.notify_change()
+
+        return True
 
     @legacy("stopDownloads")
     @permission(Perms.MODIFY)

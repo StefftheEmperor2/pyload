@@ -264,8 +264,7 @@ $(function() {
                 method: "post",
                 url: "/json/status",
                 async: true,
-                timeout: 3000,
-                success: LoadJsonToContent
+                timeout: 3000
             });
         });
     });
@@ -297,76 +296,125 @@ $(function() {
 
     $("#cap_box #cap_positional").click(submit_positional_captcha);
 
-    $.ajax({
-        method:"post",
-        url: "/json/status",
-        async: true,
-        timeout: 3000,
-        success:LoadJsonToContent
-    });
+    var cPyLoad = function($elem)
+    {
+        var thisObject = this,
+            listeners = [];
 
-    setInterval(function() {
-        $.ajax({
-            method:"post",
-            url: "/json/status",
-            async: true,
-            timeout: 3000,
-            success:LoadJsonToContent
-        });
-    }, 4000);
-});
+        LoadJsonToContent = function (a) {
+            var notification;
+            $("#speed").text(thisObject.humanFileSize(a.speed) + "/s");
+            $("#actives").text(a.active);
+            $("#actives_from").text(a.queue);
+            $("#actives_total").text(a.total);
+            var $cap_info = $(".cap_info");
+            if (a.captcha) {
+                var notificationVisible = ($cap_info.css("display") !== "none");
+                if (!notificationVisible) {
+                    $cap_info.css('display','inline');
+                    var bar = new $.peekABar({
+                        html: "<h4>{{_('New Captcha Request')}}</h4>",
+                        padding: "6px",
+                        backgroundColor: '#5CB85C',
+                        delay: 5000,
+                        autohide: true
+                    });
+                    bar.show();
+                }
+                if (desktopNotifications && !document.hasFocus() && !notificationVisible) {
+                    notification = new Notification('pyLoad', {
+                        icon: "{{theme_static('img/favicon.ico')}}",
+                        body: "{{_('New Captcha Request')}}",
+                        tag: 'pyload_captcha'
+                    });
+                    notification.onclick = function (event) {
+                        event.preventDefault();
+                        parent.focus();
+                        window.focus();
+                        $("#action_cap")[0].click();
+                    };
+                    setTimeout(function() {
+                        notification.close()
+                    }, 8000);
+                }
+            } else {
+                $cap_info.css('display', 'none');
+            }
+            if (a.download) {
+                $("#time").text(" {{_('on')}}").css('background-color', '#5cb85c');
+            } else {
+                $("#time").text(" {{_('off')}}").css('background-color', "#d9534f");
+            }
+            if (a.reconnect) {
+                $("#reconnect").text(" {{_('on')}}").css('background-color', "#5cb85c");
+            } else {
+                $("#reconnect").text(" {{_('off')}}").css('background-color', "#d9534f");
+            }
+            return null;
+        };
 
-function LoadJsonToContent(a) {
-    var notification;
-    $("#speed").text(humanFileSize(a.speed) + "/s");
-    $("#actives").text(a.active);
-    $("#actives_from").text(a.queue);
-    $("#actives_total").text(a.total);
-    var $cap_info = $(".cap_info");
-    if (a.captcha) {
-        var notificationVisible = ($cap_info.css("display") !== "none");
-        if (!notificationVisible) {
-            $cap_info.css('display','inline');
-            var bar = new $.peekABar({
-                html: "<h4>{{_('New Captcha Request')}}</h4>",
-                padding: "6px",
-                backgroundColor: '#5CB85C',
-                delay: 5000,
-                autohide: true
-            });
-            bar.show();
+        this.event_handler = function(event)
+        {
+            data = JSON.parse(event.data);
+            if (data.message == 'update_core')
+            {
+                LoadJsonToContent(data.payload)
+            }
         }
-        if (desktopNotifications && !document.hasFocus() && !notificationVisible) {
-            notification = new Notification('pyLoad', {
-                icon: "{{theme_static('img/favicon.ico')}}",
-                body: "{{_('New Captcha Request')}}",
-                tag: 'pyload_captcha'
-            });
-            notification.onclick = function (event) {
-                event.preventDefault();
-                parent.focus();
-                window.focus();
-                $("#action_cap")[0].click();
+
+        this.register_listener = function(listener)
+        {
+            listeners.push(listener)
+        }
+
+        this.register_listener(this.event_handler)
+
+        var websocket = new WebSocket("{{websocket_scheme}}://{{websocket_host}}:{{websocket_port}}/");
+
+        websocket.onopen = function (event)
+        {
+            websocket.onmessage = function (event)
+            {
+                var i = 0;
+                for (i=0;i<listeners.length;i++)
+                {
+                    listeners[i].call(listeners[i], event)
+                }
             };
-            setTimeout(function() {
-                notification.close()
-            }, 8000);
+            websocket.send(JSON.stringify({"message": "hello", "uuid": "{{websocket_id}}"}));
+        };
+
+        websocket.onerror = function(event)
+        {
+            debugger;
+            indicateFail("{{_('Websocket error occurred')}}");
         }
-    } else {
-        $cap_info.css('display', 'none');
-    }
-    if (a.download) {
-        $("#time").text(" {{_('on')}}").css('background-color', '#5cb85c');
-    } else {
-        $("#time").text(" {{_('off')}}").css('background-color', "#d9534f");
-    }
-    if (a.reconnect) {
-        $("#reconnect").text(" {{_('on')}}").css('background-color', "#5cb85c");
-    } else {
-        $("#reconnect").text(" {{_('off')}}").css('background-color', "#d9534f");
-    }
-    return null;
-}
+        this.humanFileSize = function(bytes, si)
+        {
+            if (typeof si == 'undefined')
+            {
+                si = true;
+            }
+
+            var thresh = si ? 1000 : 1024;
+            if (Math.abs(bytes) < thresh)
+            {
+                return bytes + ' B';
+            }
+            var units = si
+                ? ['kB','MB','GB','TB','PB','EB','ZB','YB']
+                : ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+            var u = -1;
+            do {
+                bytes /= thresh;
+                ++u;
+            }
+            while(Math.abs(bytes) >= thresh && u < units.length - 1);
+            return bytes.toFixed(1)+' '+units[u];
+        }
+    };
+    $(document).data('pyload', new cPyLoad())
+});
 
 function set_captcha(a) {
     captcha_reset_default();

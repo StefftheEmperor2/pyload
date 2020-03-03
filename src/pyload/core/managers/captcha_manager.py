@@ -41,6 +41,7 @@ class CaptchaManager:
         return None
 
     def handle_captcha(self, task, timeout):
+        self.pyload.notify_change()
         cli = self.pyload.is_client_connected()
 
         task.set_waiting(timeout)

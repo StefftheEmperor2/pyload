@@ -224,6 +224,9 @@ class PyFile:
     def check_if_processed(self):
         self.m.check_all_links_processed(self.id)
 
+    def is_finished(self):
+        return self.status is status_map['finished']
+
     def format_wait(self):
         """
         formats and return wait time in humanreadable format.
@@ -274,12 +277,20 @@ class PyFile:
         except Exception:
             return 0
 
+    def get_downloaded_size(self):
+        downloaded_size = 0
+        if hasattr(self.plugin, 'req') and self.plugin.req is not None:
+            downloaded_size = self.plugin.req.arrived
+        elif self.is_finished():
+            downloaded_size = self.get_size()
+        return downloaded_size
+
     def get_bytes_left(self):
         """
         gets bytes left.
         """
         try:
-            return self.plugin.req.size - self.plugin.req.arrived
+            return self.plugin.req.size - self.get_downloaded_size()
         except Exception:
             return 0
 
@@ -317,3 +328,12 @@ class PyFile:
         if not value == self.progress:
             self.progress = value
             self.notify_change()
+            self.package().notify_change()
+
+    def get_json(self):
+        return {
+            "id": self.id,
+            "progress": self.progress,
+            "status": self.status,
+            "status_name": self.get_status_name()
+        }

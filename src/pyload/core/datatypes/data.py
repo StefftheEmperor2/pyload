@@ -332,6 +332,13 @@ class ServerStatus(AbstractData):
         self.reconnect = reconnect
         self.captcha = captcha
 
+    def get_json(self):
+        dict_data = dict()
+        for key in self:
+            dict_data[key] = self[key]
+
+        return dict_data
+
 
 class ServiceCall(AbstractData):
     __slots__ = ["plugin", "func", "arguments", "parse_arguments"]
