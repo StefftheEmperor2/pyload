@@ -48,4 +48,4 @@ class Test(SimpleDownloader):
             inputs = {"g-recaptcha-response": captcha_result['result']}
 
         cookie_jar.set_dot_domain()
-        self.data = self.load(self.__free_url, post=inputs, cookies=cookie_jar)
+        self.data = self.load(self.__free_url, post=inputs, cookie_jar=cookie_jar)

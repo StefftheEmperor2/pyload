@@ -66,6 +66,11 @@ class BasePlugin:
         #: Last loaded html
         self.last_html = ""
         self.last_header = {}
+        self._cookie_jar = CookieJar()
+
+    @property
+    def cookie_jar(self):
+        return self._cookie_jar
 
     def init(self):
         """
@@ -166,7 +171,8 @@ class BasePlugin:
         req=None,
         content_type=None,
         options=None,
-        headers=None
+        headers=None,
+        cookie_jar=None
     ):
         """
         Load content at url and returns it.
@@ -223,6 +229,7 @@ class BasePlugin:
             content_type,
             options=options,
             headers=headers,
+            cookie_jar=cookie_jar
         )  # TODO: Fix network multipart in 0.6.x
         html = response.body
 

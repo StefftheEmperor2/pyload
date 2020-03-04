@@ -4,7 +4,7 @@
 import time
 
 from ..utils.purge import uniquify
-
+from pyload.core.datatypes.enums import Destination
 
 class EventManager:
     def __init__(self, core):
@@ -63,6 +63,11 @@ class Client:
 
 class UpdateEvent:
     def __init__(self, itype, iid, destination):
+        if isinstance(destination, Destination):
+            if destination.value is Destination.COLLECTOR:
+                destination = 'collector'
+            elif destination.value is Destination.QUEUE:
+                destination = 'queue'
         assert itype == "pack" or itype == "file"
         assert destination == "queue" or destination == "collector"
         self.type = itype
@@ -87,6 +92,11 @@ class RemoveEvent:
 
 class InsertEvent:
     def __init__(self, itype, iid, after, destination):
+        if isinstance(destination, Destination):
+            if destination.value is Destination.COLLECTOR:
+                destination = 'collector'
+            elif destination.value is Destination.QUEUE:
+                destination = 'queue'
         assert itype == "pack" or itype == "file"
         assert destination == "queue" or destination == "collector"
         self.type = itype

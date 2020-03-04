@@ -4,6 +4,8 @@ from .connection import Connection
 from time import sleep
 from json import dumps as json_dumps, loads as json_loads
 from uuid import uuid1
+
+
 class Websocket:
     def __init__(self, core):
         self.core = core
@@ -41,7 +43,6 @@ class Websocket:
             async for message in websocket:
                 message_data = json_loads(message)
 
-                sleep(1)
         except Exception as exc:
             if not isinstance(exc, asyncio.CancelledError):
                 self.core.log.error(exc)

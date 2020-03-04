@@ -430,7 +430,8 @@ class Api:
             .replace("\\", "_")
         )
 
-        pid = self.pyload.files.add_package(name, folder, Destination(dest))
+        destination = Destination(dest)
+        pid = self.pyload.files.add_package(name, folder, destination)
 
         self.pyload.files.add_links(links, pid)
 
@@ -441,7 +442,6 @@ class Api:
         )
 
         self.pyload.files.save()
-
         return pid
 
     @legacy("parseURLs")

@@ -42,7 +42,7 @@ cookie_jar = plugin.cookie_jar
 # body = buffer.getvalue()
 # print(body.decode('utf-8'))
 
-request = HTTPRequest(cookies=cookie_jar)
+request = HTTPRequest()
 
 r = '03AERD8XpxWcb3J9D6otuJNPJ5kl6VDgNKeekbUJdZHMX4iEWogAEMTz2zyP-D-rzxOsOwrX7onAzO0Wv6m8XlNHmgWF5Uwhuu9zs8cCaGUNTlhIfJofgd9FoXYZgzilnqGT5gBaULLB0F-7tKnEmJw4jJIDKekuJCcaCPW17xj1ciVdkusi4lCZxvREZ6N3SG2shaZ2brv6rhpfNjEKQwzldZLiuY1s6-2ZKj_jgng2OLmf49FUuNNYURbbdHtw6YhD_xHHtAgXQ3m-lKvw640Hf7aiLXWILURK8akZ9d4mN49kncBzHPit0ZS_58A-KelvsRuYXFtgMk7V2K9hiWG3d7hxuPxBTrFASWciTb9dzEmnPNGJh0OHnuTBhroosrki7mgvfSI6HD'
 
@@ -84,7 +84,7 @@ sess = cookie_jar['kohanasession']
 response = plugin.load(
     url='https://turbobit.net/download/free/6gpwt75gywzv',
     post=post,
-    cookies=cookie_jar
+    cookie_jar=cookie_jar
     )
 #new_sess = cookie_jar['kohanasession']
 #if sess != new_sess:

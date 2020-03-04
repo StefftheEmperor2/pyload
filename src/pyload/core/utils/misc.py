@@ -9,6 +9,7 @@ import requests_html
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 import base64
+import asyncio
 
 def random_string(length):
     seq = string.ascii_letters + string.digits + string.punctuation
@@ -24,7 +25,9 @@ def is_plural(value):
 
 
 def eval_js(script, *args, **kwargs):
-    return requests_html.HTML(html="""<html></html>""").render(script=script, reload=False)
+    event_loop = asyncio.new_event_loop()
+    session = requests_html.AsyncHTMLSession(loop=event_loop)
+    return event_loop.run_until_complete(requests_html.HTML(html="""<html></html>""", session=session).arender(script=script, reload=False))
 
 
 def accumulate(iterable, to_map=None):

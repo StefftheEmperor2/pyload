@@ -532,10 +532,13 @@ interactiveCaptchaHandler.prototype.iframeLoaded = function(e) {
 
 interactiveCaptchaHandler.prototype.startInteraction = function(url, params) {
     // Activate
+    var $iframe;
+
     this._active = true;
 
     this._params = params;
-    $("#" + this._iframeId).attr("src", url);
+    $iframe = $("#" + this._iframeId);
+    $iframe.attr("src", url);
 };
 
 // This function listens to messages from the TamperMonkey script in the iframe

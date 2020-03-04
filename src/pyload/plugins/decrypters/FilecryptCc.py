@@ -18,33 +18,8 @@ from pyload.core.network.http.http_request import HTTPRequest
 from ..anticaptchas.CoinHive import CoinHive
 from ..anticaptchas.ReCaptcha import ReCaptcha
 from ..anticaptchas.SolveMedia import SolveMedia
+from ..anticaptchas.CutCaptcha import CutCaptcha
 from ..base.decrypter import BaseDecrypter
-
-
-class BIGHTTPRequest(HTTPRequest):
-    """
-    Overcome HTTPRequest's load() size limit to allow loading very big web pages by
-    overrding HTTPRequest's write() function.
-    """
-
-    # TODO: Add 'limit' parameter to HTTPRequest in v0.6.x
-    def __init__(self, cookies=None, options=None, limit=1_000_000):
-        self.limit = limit
-        super().__init__(cookies=cookies, options=options)
-
-    def write(self, buf):
-        """
-        writes response.
-        """
-        if self.limit and self.rep.tell() > self.limit or self.abort:
-            rep = self.getResponse()
-            if self.abort:
-                raise Abort
-            with open("response.dump", mode="wb") as fp:
-                fp.write(rep)
-            raise Exception("Loaded Url exceeded limit")
-
-        self.rep.write(buf)
 
 
 class FilecryptCc(BaseDecrypter):
@@ -80,6 +55,7 @@ class FilecryptCc(BaseDecrypter):
     CAPTCHA_PATTERN = r"<h2>Security prompt</h2>"
     INTERNAL_CAPTCHA_PATTERN = r'<img id="nc" .* src="(.+?)"'
     CIRCLE_CAPTCHA_PATTERN = r'<input type="image" src="(.+?)"'
+    CUTCAPTCHA_PATTERN = r'<div id="puzzle-captcha"'
     KEY_CAPTCHA_PATTERN = r"<script language=JavaScript src='(http://backs\.keycaptcha\.com/swfs/cap\.js)'"
     SOLVEMEDIA_CAPTCHA_PATTERN = r'<script type="text/javascript" src="(https?://api(?:-secure)?\.solvemedia\.com/papi/challenge.+?)"'
 
@@ -91,11 +67,9 @@ class FilecryptCc(BaseDecrypter):
         except Exception:
             pass
 
-        self.req.http = BIGHTTPRequest(
-            cookies=CookieJar(None),
-            options=self.pyload.request_factory.get_options(),
-            limit=2_000_000,
-        )
+        self.req.set_is_big()
+        self.req.set_limit(2_000_000)
+
 
     def decrypt(self, pyfile):
         self.data = self._filecrypt_load_url(pyfile.url)
@@ -141,7 +115,7 @@ class FilecryptCc(BaseDecrypter):
     def handle_password_protection(self):
         if (
             re.search(
-                r'div class="input">\s*<input type="password" name="password" id="p4assw0rt"',
+                r'div class="input">\s*<input(?: type="password"| type="text") name="password" id="p4assw0rt"',
                 self.data,
             )
             is None
@@ -158,18 +132,20 @@ class FilecryptCc(BaseDecrypter):
             )
 
         self.data = self._filecrypt_load_url(
-            self.pyfile.url, post={"password": password}
+            self.pyfile.url, post={"password": password}, cookie_jar=self.cookie_jar
         )
 
     def handle_captcha(self, submit_url):
         if re.search(self.CAPTCHA_PATTERN, self.data):
             for handle in (
+                self._handle_cutcaptcha,
                 self._handle_internal_captcha,
                 self._handle_circle_captcha,
                 self._handle_solvemedia_captcha,
                 self._handle_keycaptcha_captcha,
                 self._handle_coinhive_captcha,
                 self._handle_recaptcha_captcha,
+
             ):
 
                 res = handle(submit_url)
@@ -205,6 +181,26 @@ class FilecryptCc(BaseDecrypter):
             return self._filecrypt_load_url(
                 url, post={"recaptcha_response_field": captcha_code}
             )
+
+        else:
+            return None
+
+    def _handle_cutcaptcha(self, url):
+        m = re.search(self.CUTCAPTCHA_PATTERN, self.data)
+        if m is not None:
+            cutcaptcha = CutCaptcha(self.pyfile)
+            captcha_key = cutcaptcha.detect_key()
+
+            if captcha_key:
+                self.captcha = cutcaptcha
+                response, challenge = cutcaptcha.challenge(captcha_key)
+
+                return self._filecrypt_load_url(
+                    url, post={"g-recaptcha-response": response}
+                )
+
+            else:
+                return None
 
         else:
             return None

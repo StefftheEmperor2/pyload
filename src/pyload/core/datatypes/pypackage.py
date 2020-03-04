@@ -2,9 +2,9 @@
 # AUTHOR: RaNaN, mkaay
 
 
-from ..managers.event_manager import UpdateEvent, CoreEvent
+from ..managers.event_manager import UpdateEvent, InsertEvent
 from ..utils.old import safepath
-
+from pyload.core.datatypes.enums import Destination
 
 class PyPackage:
     """
@@ -69,10 +69,18 @@ class PyPackage:
     def delete(self):
         self.m.delete_package(self.id)
 
+    def get_destination(self):
+        return Destination(Destination.COLLECTOR if not self.queue else Destination.QUEUE)
+
     def notify_change(self):
-        e = UpdateEvent("pack", self.id, "collector" if not self.queue else "queue")
+        e = UpdateEvent("pack", self.id, self.get_destination())
         self.m.pyload.event_manager.add_event(e)
 
+        self.m.pyload.notify_change()
+
+    def notify_add(self):
+        e = InsertEvent('pack', self.id, self.order, self.get_destination())
+        self.m.pyload.event_manager.add_event(e)
         self.m.pyload.notify_change()
 
     def __setattr__(self, key, value):

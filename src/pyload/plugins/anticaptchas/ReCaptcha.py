@@ -455,7 +455,7 @@ class ReCaptcha(CaptchaService):
                 "signature": self.RECAPTCHA_INTERACTIVE_SIG,
                 "code": self.RECAPTCHA_INTERACTIVE_JS,
             },
-            "cookie_jar": self.pyfile.plugin.req.cookie_jar,
+            "cookie_jar": None,
             "user_agent": user_agent
         }
 

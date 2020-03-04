@@ -177,7 +177,7 @@ class BaseDownloader(BaseHoster):
         cookie_jar = None
         if hasattr(self, 'cookie_jar'):
             cookie_jar = self.cookie_jar
-        header = self.load(url, just_header=True, cookies=cookie_jar)
+        header = self.load(url, just_header=True, cookie_jar=cookie_jar)
 
         for i in range(1, maxredirs):
             if not redirect or header.get("connection") == "close":

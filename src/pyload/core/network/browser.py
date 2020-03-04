@@ -5,7 +5,7 @@ from logging import getLogger
 from pyload import APPID
 
 from .http.http_download import HTTPDownload
-from .http.http_request import HTTPRequest
+from .http.http_request import HTTPRequest, BigHTTPRequest
 from .cookie_jar import CookieJar
 
 class Browser:
@@ -20,10 +20,26 @@ class Browser:
         self.dl = None
         self._user_agent = None
         self._last_url = None
+        self._is_big = False
+        self._limit = None
+
+    def set_is_big(self):
+        self._is_big = True
+
+    def set_is_small(self):
+        self._is_big = False
+
+    def set_limit(self, limit):
+        self._limit = limit
 
     @property
     def http(self):
-        req = HTTPRequest(self.cookie_jar)
+
+        if self._is_big:
+            req = BigHTTPRequest(cookies=self.cookie_jar, limit=self._limit)
+        else:
+            req = HTTPRequest(cookies=self.cookie_jar)
+
         req.user_agent = self.user_agent
 
         return req

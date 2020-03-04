@@ -273,7 +273,6 @@ class HTTPResponse:
     def header(self, header):
         self._header = header
 
-
 class HTTPRequest:
     def __init__(self, cookies=None, options=None):
         self.c = pycurl.Curl()
@@ -385,7 +384,7 @@ class HTTPRequest:
     def clear_cookies(self):
         self.c.setopt(pycurl.COOKIELIST, "")
 
-    def set_request_context(self, url, get, post, referer, cookies, multipart=False, content_type=None, options=None, headers=None):
+    def set_request_context(self, url, get, post, referer, cookies, multipart=False, content_type=None, options=None, headers=None, cookie_jar=None):
         """
         sets everything needed for the request.
         """
@@ -424,9 +423,9 @@ class HTTPRequest:
         if referer and self.last_url:
             self.c.setopt(pycurl.REFERER, self.last_url)
 
-        if cookies:
-            if isinstance(cookies, CookieJar):
-                for cookie in cookies:
+        if cookies is True or cookies is None:
+            if isinstance(cookie_jar, CookieJar):
+                for cookie in cookie_jar:
                     if not cookie.is_expired():
                         cookie_formatted = cookie.get_formatted()
                         self.c.setopt(pycurl.COOKIELIST, cookie_formatted.decode('utf-8'))
@@ -454,12 +453,19 @@ class HTTPRequest:
         save_cookies=True,
         content_type=None,
         options=None,
-        headers=None
+        headers=None,
+        cookie_jar=None
     ):
         """
         load and returns a given page.
         """
-        self.set_request_context(url, get, post, referer, cookies, multipart, content_type=content_type, options=options, headers=headers)
+        self.set_request_context(url, get, post, referer,
+                                 cookies=cookies,
+                                 cookie_jar=cookie_jar,
+                                 multipart=multipart,
+                                 content_type=content_type,
+                                 options=options,
+                                 headers=headers)
 
         self.header = bytes()
 
@@ -708,3 +714,30 @@ class HTTPRequest:
         if hasattr(self, "c"):
             self.c.close()
             del self.c
+
+
+class BigHTTPRequest(HTTPRequest):
+    """
+    Overcome HTTPRequest's load() size limit to allow loading very big web pages by
+    overrding HTTPRequest's write() function.
+    """
+
+    # TODO: Add 'limit' parameter to HTTPRequest in v0.6.x
+    def __init__(self, cookies=None, options=None, limit=1_000_000):
+        self.limit = limit
+        super().__init__(cookies=cookies, options=options)
+
+    def write(self, buf):
+        """
+        writes response.
+        """
+        if self.limit and self.rep.tell() > self.limit or self.abort:
+            rep = self.getResponse()
+            if self.abort:
+                raise Abort
+            with open("response.dump", mode="wb") as fp:
+                fp.write(rep)
+            raise Exception("Loaded Url exceeded limit")
+
+        self.rep.write(buf)
+
