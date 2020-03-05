@@ -219,7 +219,7 @@ class FilecryptCc(BaseDecrypter):
             self.log_debug(f"Circle Captcha URL: {captcha_url}")
 
             captcha_code = self.captcha.decrypt(
-                captcha_url, input_type="png", output_type="positional"
+                captcha_url, input_type="png", output_type="positional", ocr=False
             )
 
             return self._filecrypt_load_url(

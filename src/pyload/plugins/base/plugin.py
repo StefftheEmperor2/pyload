@@ -242,13 +242,13 @@ class BasePlugin:
         if decode:
             html = html_unescape(html)
 
-        # TODO: Move to network in 0.6.x
-        html = _decode(html)
+            # TODO: Move to network in 0.6.x
+            html = _decode(html)
 
-        self.last_html = html
+            self.last_html = html
 
-        if self.pyload.debug:
-            self.dump_html()
+            if self.pyload.debug:
+                self.dump_html()
 
         # TODO: Move to network in 0.6.x
         header = {"code": response.code, "url": response.effective_url}

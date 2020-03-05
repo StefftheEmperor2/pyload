@@ -44,7 +44,11 @@ def decode(value):
     Encoded string (default to own system encoding) -> unicode string.
     """
     try:
-        return str(value)
+        if type(value) is bytes:
+            decoded_value = value.encode('UTF-8')
+        else:
+            decoded_value = str(value)
+        return decoded_value
     except UnicodeEncodeError:
         return normalize(value)
 
