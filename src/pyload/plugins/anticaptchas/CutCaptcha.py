@@ -33,61 +33,65 @@ class CutCaptcha(CaptchaService):
     )
 
     CUTCAPTCHA_INTERACTIVE_JS = """
-            debugger;
             while(document.children[0].childElementCount > 0) {
                 document.children[0].removeChild(document.children[0].children[0]);
+            }
+            if (window.lastListenerInfo)
+            {
+                (function ()
+                {
+                    var i, event;
+                    for (i=0;i<window.lastListenerInfo.length;i++)
+                    {
+                        event = window.lastListenerInfo[i];
+                        if (event['a'] == 'load')
+                        {
+                            window.removeEventListener('load', event['b']);
+                        }
+                    }
+                })();
+                
             }
             document.children[0].innerHTML = '<html><head></head><body style="display:inline-block;">'
                 + '<div id="puzzle-captcha" aria-style="mobile"></div></body></html>';
                 
-            var localContext = {
-                "window": {
-                    "location": {
-                        "href": request.params.url
-                    },
-                    "top": {
-                        "location": {
-                            "href": request.params.url 
-                        }
-                    }
-                }
-            };
-            
-            debugger;
             gpyload.data.sitekey = request.params.sitekey;
-
-            debugger;
-            
+         
             gpyload.getFrameSize = function() {
-                debugger;
-                var rectAnchor =  {top: 0, right: 0, bottom: 0, left: 0},
+                var rectIFrame =  {top: 0, right: 0, bottom: 0, left: 0},
                     rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
                     rect;
                 var iframe = document.body.querySelector("#puzzle-captcha iframe");
                 if (iframe !== null && gpyload.isVisible(iframe)) 
                 {
-                    rect = anchor.getBoundingClientRect();
+                    rect = iframe.getBoundingClientRect();
                     rectIFrame = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
                 }
                 
-                var left = Math.floor(rectAnchor.left);
-                var right = Math.ceil(rectAnchor.right);
-                var top = Math.floor(rectAnchor.top);
-                var bottom = Math.ceil(rectAnchor.bottom);
+                var left = Math.floor(rectIFrame.left);
+                var right = Math.ceil(rectIFrame.right);
+                var top = Math.floor(rectIFrame.top);
+                var bottom = Math.ceil(rectIFrame.bottom);
                 return {top: top, left: left, bottom: bottom, right: right};
             };
 
             // function that is called when the captcha finished loading and is ready to interact
             window.pyloadCaptchaOnLoadCallback = function() 
             {
-                debugger;
                 window.CUTCAPTCHA_MISERY_KEY = gpyload.data.sitekey;
                 window.capResponseCallback = function(token) { gpyload.submitResponse(token) };
                 var js_script = document.createElement('script');
                 js_script.type = "text/javascript";
+                js_script.addEventListener('load', function() {
+                    var DOMContentLoaded_event = document.createEvent("Event")
+                    DOMContentLoaded_event.initEvent("DOMContentLoaded", true, true)
+                    window.document.dispatchEvent(DOMContentLoaded_event)
+                    gpyload.activated();
+                });
+                 
                 js_script.src = request.params.script_src;
                 document.getElementsByTagName('head')[0].appendChild(js_script);
-                gpyload.activated();
+                
             };
 
             

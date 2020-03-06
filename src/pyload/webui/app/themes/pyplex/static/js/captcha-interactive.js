@@ -35,8 +35,17 @@
 */
 
 (function() {
-    'use strict';
+    if (window.location.host == 'filecrypt.cc')
+    {
+        EventTarget.prototype.realAddEventListener = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function(a,b,c)
+        {
+            this.realAddEventListener(a,b,c);
 
+            if(!this.lastListenerInfo){this.lastListenerInfo = new Array()};
+            this.lastListenerInfo.push({a : a, b : b , c : c});
+        };
+    }
     // this function listens to messages from the pyload main page
     window.addEventListener('message', function(e) {
         try {
@@ -44,7 +53,8 @@
         } catch(e) {
             return
         }
-        if(request.constructor === {}.constructor && request.actionCode === "pyloadActivateInteractive") {
+        if(request.constructor === {}.constructor && request.actionCode === "pyloadActivateInteractive")
+        {
             if (request.params.script) {
                 var sig = new KJUR.crypto.Signature({"alg": "SHA384withRSA", "prov": 'cryptojs/jsrsa'});
                 sig.init("-----BEGIN PUBLIC KEY-----\n" +
@@ -57,9 +67,31 @@
                     "fwIDAQAB\n" +
                     "-----END PUBLIC KEY----- ");
                 sig.updateString(request.params.script.code);
-                if (sig.verify(request.params.script.signature)) {
-                    window.gpyload = {
-                        isVisible : function(element) {
+
+                    if (typeof request.params.cookie_jar != 'undefined')
+                    {
+                        for (let key in request.params.cookie_jar)
+                        {
+                            var cookie_obj = request.params.cookie_jar[key],
+                            cookie_str = cookie_obj.name+'='+cookie_obj.value
+                            if (cookie_obj.expire !== null)
+                            {
+                                cookie_str += ';expires='+cookie_obj.expire
+                            }
+                            if (cookie_obj.path !== null)
+                            {
+                                cookie_str += ';path='+cookie_obj.expire
+                            }
+                            // document.cookie = cookie_str;
+                        }
+                    }
+
+                    window.cgpyload = function(param_data)
+                    {
+
+                        var cookie_jar = request.params.cookie_jar;
+
+                        this.isVisible = function(element) {
                             var style = window.getComputedStyle(element);
                             return !(style.width === 0 ||
                                     style.height === 0 ||
@@ -67,8 +99,9 @@
                                     style.display ==='none' ||
                                     style.visibility === 'hidden'
                             );
-                        },
-                        debounce : function (fn, delay) {
+                        };
+
+                        this.debounce = function (fn, delay) {
                           var timer = null;
                           return function () {
                             var context = this, args = arguments;
@@ -77,31 +110,55 @@
                                 fn.apply(context, args);
                             }, delay);
                           };
-                        },
-                        submitResponse: function(response) {
+                        };
+
+                        this.submitResponse = function(response) {
                             if (typeof gpyload.observer !== 'undefined') {
                                 gpyload.observer.disconnect();
                             }
-                            var responseMessage = {actionCode: "pyloadSubmitResponse", params: {"response": response}};
+                            var response_cookies = cookie_jar,
+                             cookie_lines = document.cookie.split(';'),
+                             cookie_kv, cookie_key, cookie_value;
+
+                            for (let i in cookie_lines)
+                            {
+                                cookie_kv = cookie_lines[i].split('=')
+                                cookie_key = cookie_kv[0].trim();
+                                cookie_value = cookie_kv[1].trim();
+                                if (typeof response_cookies[cookie_key] != 'undefined')
+                                {
+                                    response_cookies[cookie_key].value = cookie_value;
+                                }
+                                else
+                                {
+                                    response_cookies[cookie_key] = {"name": cookie_key, "value": cookie_value, "domain": request.params.domain};
+                                }
+                            }
+                            var responseMessage = {actionCode: "pyloadSubmitResponse", params: {"cookie": response_cookies, "response": response, "domain": window.location.hostname}};
                             parent.postMessage(JSON.stringify(responseMessage),"*");
-                        },
-                        activated: function() {
+                        };
+
+                        this.activated = function() {
                             var responseMessage = {actionCode: "pyloadActivatedInteractive"};
                             parent.postMessage(JSON.stringify(responseMessage),"*");
-                        },
-                        setSize : function(rect) {
+                        };
+
+                        this.setSize = function(rect) {
                             if (gpyload.data.rectDoc.left !== rect.left || gpyload.data.rectDoc.right !== rect.right || gpyload.data.rectDoc.top !== rect.top || gpyload.data.rectDoc.bottom !== rect.bottom) {
                                 gpyload.data.rectDoc = rect;
                                 var responseMessage = {actionCode: "pyloadIframeSize", params: {rect: rect}};
                                 parent.postMessage(JSON.stringify(responseMessage), "*");
                             }
-                        },
-                        data : {
-                            debounceInterval: 1500,
-                            rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
-                        }
+                        };
+
+                        this.data = param_data;
                     };
 
+                    window.gpyload = new cgpyload(
+                        {
+                            debounceInterval: 1500,
+                            rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
+                        });
                     try {
                         eval(request.params.script.code);
                     } catch(err) {
@@ -122,9 +179,7 @@
                         js_script.innerHTML = "gpyload.observer.observe(document.querySelector('body'), {attributes:true, attributeOldValue:false, characterData:true, characterDataOldValue:false, childList:true, subtree:true});";
                         document.getElementsByTagName('body')[0].appendChild(js_script);
                     }
-                } else {
-                    console.error("pyLoad: Script signature verification failed")
-                }
+
             }
         }
     });
