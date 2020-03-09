@@ -1,0 +1,30 @@
+{
+  "manifest_version": 2,
+  "name": "pyLoad",
+  "version": "1.0",
+
+  "description": "Handles interactive Captcha",
+
+  "icons": {
+    "48": "icons/pyload.svg",
+    "96": "icons/pyload.svg"
+  },
+
+  "permissions": [
+    "webRequest", "webRequestBlocking", "*://filecrypt.cc/*", "*://cutcaptcha.com/*"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://(?:www\\.)?filecrypt.cc/*"],
+      "js": ["captcha.js"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "57.0a1"
+    }
+  }
+}
