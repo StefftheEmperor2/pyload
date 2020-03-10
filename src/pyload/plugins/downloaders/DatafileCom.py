@@ -62,11 +62,11 @@ class DatafileCom(SimpleDownloader):
                 "fileid": self.info["pattern"]["ID"],
             }
 
-            catcha_result = json.loads(
+            captcha_result = json.loads(
                 self.load("http://www.datafile.com/files/ajax.html", post=post_data)
             )
 
-            if not catcha_result["success"]:
+            if not captcha_result["success"]:
                 self.retry_captcha()
 
             self.captcha.correct()
@@ -74,7 +74,7 @@ class DatafileCom(SimpleDownloader):
             self.wait(wait_time)
 
             post_data["doaction"] = "getFileDownloadLink"
-            post_data["token"] = catcha_result["token"]
+            post_data["token"] = captcha_result["token"]
 
             file_info = json.loads(
                 self.load("http://www.datafile.com/files/ajax.html", post=post_data)

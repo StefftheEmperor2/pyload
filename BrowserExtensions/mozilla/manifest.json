@@ -11,14 +11,20 @@
   },
 
   "permissions": [
-    "webRequest", "webRequestBlocking", "*://filecrypt.cc/*", "*://cutcaptcha.com/*"
+    "webRequest",
+    "webRequestBlocking",
+    "*://filecrypt.cc/*",
+    "*://filecrypt.co/*",
+    "*://cutcaptcha.com/*"
   ],
   "background": {
     "scripts": ["background.js"]
   },
   "content_scripts": [
     {
-      "matches": ["*://(?:www\\.)?filecrypt.cc/*"],
+      "matches": [
+        "*://(?:www\\.)?filecrypt.cc/*",
+        "*://(?:www\\.)?filecrypt.co/*"],
       "js": ["captcha.js"]
     }
   ],

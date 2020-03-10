@@ -19,6 +19,8 @@ from ..anticaptchas.CoinHive import CoinHive
 from ..anticaptchas.ReCaptcha import ReCaptcha
 from ..anticaptchas.SolveMedia import SolveMedia
 from ..anticaptchas.CutCaptcha import CutCaptcha
+from ..anticaptchas.ImageCaptcha import ImageCaptcha
+from ..anticaptchas.CircleCaptcha import CircleCaptcha
 from ..base.decrypter import BaseDecrypter
 
 
@@ -30,7 +32,7 @@ class FilecryptCc(BaseDecrypter):
 
     __pyload_version__ = "0.5"
 
-    __pattern__ = r"https?://(?:www\.)?filecrypt\.cc/Container/\w+"
+    __pattern__ = r"https?://(?:www\.)?filecrypt\.(?:cc|co)/Container/\w+"
     __config__ = [
         ("enabled", "bool", "Activated", True),
         ("handle_mirror_pages", "bool", "Handle Mirror Pages", True),
@@ -172,14 +174,16 @@ class FilecryptCc(BaseDecrypter):
     def _handle_internal_captcha(self, url):
         m = re.search(self.INTERNAL_CAPTCHA_PATTERN, self.data)
         if m is not None:
+            image_captcha = ImageCaptcha(self.pyfile)
+            image_captcha.cookie_jar.add_cookies(self.cookie_jar)
             captcha_url = urllib.parse.urljoin(self.pyfile.url, m.group(1))
 
             self.log_debug(f"Internal Captcha URL: {captcha_url}")
 
-            captcha_code = self.captcha.decrypt(captcha_url, input_type="gif")
+            captcha_code = image_captcha.decrypt(captcha_url, input_type="gif", cookie_jar=self.cookie_jar)
 
             return self._filecrypt_load_url(
-                url, post={"recaptcha_response_field": captcha_code}
+                url, post={"captcha_response": captcha_code}, cookie_jar=self.cookie_jar
             )
 
         else:
@@ -192,7 +196,6 @@ class FilecryptCc(BaseDecrypter):
             captcha_key = cutcaptcha.detect_key()
 
             if captcha_key:
-                self.captcha = cutcaptcha
                 response, challenge = cutcaptcha.challenge(captcha_key)
 
                 return self._filecrypt_load_url(
@@ -213,17 +216,17 @@ class FilecryptCc(BaseDecrypter):
                     urllib.parse.urljoin(self.pyfile.url, m.group(1))
                 )
             )
-
+            circle_captcha = CircleCaptcha(self.pyfile)
             captcha_url = urllib.parse.urljoin(self.pyfile.url, m.group(1))
 
             self.log_debug(f"Circle Captcha URL: {captcha_url}")
 
-            captcha_code = self.captcha.decrypt(
-                captcha_url, input_type="png", output_type="positional", ocr=False
+            captcha_code = circle_captcha.decrypt_from_web(
+                captcha_url
             )
 
             return self._filecrypt_load_url(
-                url, post={"button.x": captcha_code[0], "button.y": captcha_code[1]}
+                url, post={"button.x": captcha_code[0], "button.y": captcha_code[1]}, cookie_jar=self.cookie_jar
             )
 
         else:
@@ -248,6 +251,7 @@ class FilecryptCc(BaseDecrypter):
                 return self._filecrypt_load_url(
                     url,
                     post={"adcopy_response": response, "adcopy_challenge": challenge},
+                    cookie_jar=self.cookie_jar
                 )
 
         else:

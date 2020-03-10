@@ -539,7 +539,7 @@ class CircleCaptcha(BaseOCR):
         # self.log_debug(f"{(x, y)} = {result}")
         return result
 
-    def decrypt(self, img):
+    def decrypt(self, img, input_type=None, output_type=None, ocr=None):
         i_debug_save_file = 0
         mypalette = None
         for im in ImageSequence(img):
@@ -800,7 +800,7 @@ class CircleCaptcha(BaseOCR):
 
     #: Return coordinates of opened circle (eg (x, y))
     def decrypt_from_web(self, url):
-        file = io.StringIO(urllib.request.urlopen(url).read())
+        file = io.BytesIO(urllib.request.urlopen(url).read())
         img = Image.open(file)
         coords = self.decrypt(img)
         self.log_info(self._("Coords: {}").format(coords))

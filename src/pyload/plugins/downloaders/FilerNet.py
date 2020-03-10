@@ -52,7 +52,7 @@ class FilerNet(SimpleDownloader):
         self.captcha = ReCaptcha(pyfile)
         response, challenge = self.captcha.challenge()
 
-        #: Avoid 'Correct catcha'
+        #: Avoid 'Correct captcha'
         captcha_task = self.captcha.task
         self.captcha.task = None
 

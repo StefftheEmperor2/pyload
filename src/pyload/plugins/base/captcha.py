@@ -50,6 +50,7 @@ class BaseCaptcha(BasePlugin):
         output_type="textual",
         ocr=True,
         timeout=120,
+        cookie_jar=None
     ):
         img = self.load(
             url,
@@ -59,6 +60,7 @@ class BaseCaptcha(BasePlugin):
             cookies=cookies,
             decode=False,
             req=req or self.pyfile.plugin.req,
+            cookie_jar=cookie_jar
         )
         return self.decrypt_image(img, input_type, output_type, ocr, timeout)
 
@@ -103,19 +105,24 @@ class BaseCaptcha(BasePlugin):
                 )  #: Rename `captcha` to `ocr` in 0.6.x
                 result = _OCR(self.pyfile).recognize(img_f.name)
             else:
-                result = self.recognize(img_f.name)
+                try:
+                    result = self.recognize(img_f.name)
 
-                if not result:
-                    self.log_warning(self._("No OCR result"))
+                    if not result:
+                        self.log_warning(self._("No OCR result"))
+                except NotImplementedError as exc:
+                    self.log_info(self._("OCR is not implemented..."))
+                    pass
 
         if not result:
             captcha_manager = self.pyload.captcha_manager
             timeout = max(timeout, 50)
 
             try:
+                img_base64_encoded = base64.standard_b64encode(img)
                 params = {
                     "src": "data:image/{};base64,{}".format(
-                        input_type, base64.standard_b64encode(img)
+                        input_type, img_base64_encoded.decode('UTF-8')
                     ),
                     "file": img_f.name,
                     "captcha_plugin": self.__name__,

@@ -480,10 +480,10 @@ function clear_captcha() {
 function submit_captcha() {
     var $cap_result = $("#cap_result");
     load_captcha("post", {
-        "cap_id": $("#cap_id").val(),
-         "cap_result": $cap_result.val(),
-         "cookies": document.cookie
-         }
+            "cap_id": $("#cap_id").val(),
+            "cap_result": $cap_result.val(),
+            "type": $("#cap_type").val()
+        }
     );
     $cap_result.val("");
     return false;

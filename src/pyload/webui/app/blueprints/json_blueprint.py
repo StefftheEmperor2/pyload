@@ -244,9 +244,8 @@ def set_captcha():
 
     if flask.request.method == "POST":
         tid = int(flask.request.form["cap_id"])
-        result = json.loads(flask.request.form["cap_result"])
-        data = result['data']
-        api.set_captcha_result(tid, data)
+        result = flask.request.form["cap_result"]
+        api.set_captcha_result(tid, result)
 
     task = api.get_captcha_task()
     if task.tid >= 0:
