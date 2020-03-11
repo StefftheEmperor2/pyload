@@ -1,8 +1,21 @@
 
 function wrapWindow(text, after) {
 	 return `(function () {
+	    window.document['addMockedEventListener'] = function()
+	    {
+	        document.addEventListener.apply(document, arguments);
+	    }
 		let origWindow = window;
-		let windowMockData = {};
+		let windowMockData = {
+		    "addMockedEventListener": function()
+		    {
+		        origWindow.addEventListener.apply(origWindow, arguments);
+		    },
+		    "removeMockedEventListener": function()
+		    {
+		        origWindow.removeEventListener.apply(origWindow, arguments);
+		    }
+		};
 		(function () {
 		    let findTop = function(childWindow)
 		    {
@@ -37,6 +50,7 @@ function wrapWindow(text, after) {
 		        },
 		        set: function(target, prop, value) {
 		            origWindow[prop] = value;
+		            return true;
 		        },
 		        has: function(target, key) {
 		            let hasValue = false;
@@ -54,9 +68,6 @@ function wrapWindow(text, after) {
 		        getPrototypeOf: function(target)
 		        {
 		            return Object.getPrototypeOf(origWindow);
-		        },
-		        apply: function(target, thisArg, argumentsList) {
-		            debugger;
 		        }
 		    });
 			let window = revocableWindowProxy.proxy;
@@ -65,7 +76,6 @@ function wrapWindow(text, after) {
             windowMockData['top'] = findTop();
             top = window.top;
 
-			debugger;
 			(function() {`+text+after+`}).apply(window);
 		})();
 	})();`;
@@ -102,7 +112,7 @@ function filecryptListener(details) {
 
 		// Just change any instance of Example in the HTTP response
 		// to WebExtension Example.
-		if (details.url.match(/\.js(?:\?(?:.*))$/))
+		if (details.url.match(/\.js(?:\?(?:.*))?$/))
 		{
 
 		    after = '';
@@ -112,7 +122,11 @@ function filecryptListener(details) {
 			    after += 'origWindow.Enumerable = Enumerable; origWindow[\'$H\'] = $H; origWindow[\'$w\'] = $w;';
 			    after += 'origWindow[\'Ajax\'] = Ajax;';
 			    after += 'origWindow[\'Field\'] = Field;';
-			     after += 'origWindow[\'Form\'] = Form;';
+                after += 'origWindow[\'Form\'] = Form;';
+			}
+			if (details.url.match(/effects\.js/))
+			{
+			    after += 'origWindow[\'Effect\'] = Effect;';
 			}
 			replacedStr = wrapWindow(str, after);
 
@@ -129,7 +143,7 @@ function filecryptListener(details) {
             if (details.url.match(/jquery\.js/))
 			{
                 replacedStr = replacedStr.replace('a.addEventListener(', "origWindow.addEventListener(");
-                replacedStr = replacedStr.replace('a.getComputedStyle(', "origWindow.getComputedStyle(");
+                replacedStr = replacedStr.replace('a.getComputedStyle', "origWindow.getComputedStyle");
 			}
 			replacedStr = replacedStr.replace('window.addEventListener(', 'origWindow.addEventListener(');
 			filter.write(encoder.encode(replacedStr));
@@ -161,17 +175,34 @@ function cutcaptchaListener(details) {
 
 		// Just change any instance of Example in the HTTP response
 		// to WebExtension Example.
-		if (details.url.match(/\.js(?:\?(?:.*))$/))
+		if (details.url.match(/\.js(?:\?(?:.*))?$/) && ! (details.url.match(/jquery\.js/)))
 		{
+		    str = str.replace('\\x61\\x64\\x64\\x45\\x76\\x65\\x6e\\x74\\x4c\\x69\\x73\\x74\\x65\\x6e\\x65\\x72', 'addMockedEventListener');
+		    str = str.replace('\\x72\\x65\\x6d\\x6f\\x76\\x65\\x45\\x76\\x65\\x6e\\x74\\x4c\\x69\\x73\\x74\\x65\\x6e\\x65\\x72', 'removeMockedEventListener');
 			replacedStr = wrapWindow(str);
 
-			if (details.url.match(/jquery\.js/))
-			{
-                replacedStr = replacedStr.replace('a.addEventListener(', "origWindow.addEventListener(");
-                replacedStr = replacedStr.replace('a.getComputedStyle(', "origWindow.getComputedStyle(");
-			}
-
 			filter.write(encoder.encode(replacedStr));
+		}
+		else if (details.url.match(/\.html(?:\?(?:.*))?$/))
+		{
+		    str = str.replace('window.addEventListener(', 'origWindow.addEventListener(');
+		    str = str.replace('\\x61\\x64\\x64\\x45\\x76\\x65\\x6e\\x74\\x4c\\x69\\x73\\x74\\x65\\x6e\\x65\\x72', 'addMockedEventListener')
+		    str = str.replace('\\x72\\x65\\x6d\\x6f\\x76\\x65\\x45\\x76\\x65\\x6e\\x74\\x4c\\x69\\x73\\x74\\x65\\x6e\\x65\\x72', 'removeMockedEventListener');
+		    var re = /(?:<script>([\s\S]*?)<\/script>)/g, lastEnd=0, script, after;
+            replacedStr = '';
+            while ((match = re.exec(str)) != null)
+            {
+                script = match[1];
+                after = '';
+                if (script.match(/var MetrikaLog = function MetrikaLog/))
+                {
+                    after = 'origWindow[\'MetrikaLog\'] = MetrikaLog';
+                }
+                replacedStr += str.substring(lastEnd, match.index)+'<script>'+wrapWindow(match[1], after)+'</script>';
+                lastEnd=match.index+match[0].length;
+            }
+            replacedStr+=str.substring(lastEnd);
+            filter.write(encoder.encode(replacedStr));
 		}
 		else
 		{
