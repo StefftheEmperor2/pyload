@@ -160,6 +160,7 @@
                             rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
                         });
                     try {
+                        debugger;
                         eval(request.params.script.code);
                     } catch(err) {
                         console.error("pyLoad: Script aborted: " + err.name + ": " + err.message + " (" + err.stack +")");

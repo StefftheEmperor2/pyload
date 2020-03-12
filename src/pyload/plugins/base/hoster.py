@@ -495,6 +495,8 @@ class BaseHoster(BasePlugin):
         if 0 < attemps <= self.retries[id]:
             self.fail(msgfail)
 
+        self.pyload.notify_change()
+
         self.retries[id] += 1
 
         self.wait(wait)

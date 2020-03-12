@@ -2,8 +2,12 @@
 
 import os
 import subprocess
+import base64
+import time
+from io import BytesIO
 
 from PIL import Image
+from PIL import PngImagePlugin
 
 from pyload import PKGDIR
 
@@ -28,6 +32,7 @@ class BaseOCR(BasePlugin):
         self._init(pyfile.m.pyload)
         self.pyfile = pyfile
         self.init()
+        self.img=None
 
     def _log(self, level, plugintype, pluginname, args, kwargs):
         args = (self.__name__,) + args
@@ -354,3 +359,39 @@ class BaseOCR(BasePlugin):
             return result
         else:
             self.result_captcha = result
+
+    def run_captcha_task(self, timeout=0, input_type="png", output_type="textual"):
+        captcha_manager = self.pyload.captcha_manager
+        timeout = max(timeout, 50)
+        task = None
+        try:
+            if isinstance(self.img, PngImagePlugin.PngImageFile):
+                buffered = BytesIO()
+                self.img.save(buffered, format="PNG")
+                img_base64_encoded = base64.standard_b64encode(buffered.getvalue())
+            else:
+                img_base64_encoded = base64.standard_b64encode(self.img)
+            params = {
+                "src": "data:image/{};base64,{}".format(
+                    input_type, img_base64_encoded.decode('UTF-8')
+                ),
+                "captcha_plugin": self.__name__,
+                "plugin": self.pyfile.plugin.__name__,
+            }
+            task = captcha_manager.new_task(input_type, params, output_type)
+
+            captcha_manager.handle_captcha(task, timeout)
+
+            while task.is_waiting():
+                self.pyfile.plugin.check_status()
+                time.sleep(1)
+
+        finally:
+            if task is not None:
+                captcha_manager.remove_task(task)
+                self.pyload.notify_change()
+
+        if task is not None:
+            result = task.result
+
+        return result

@@ -57,6 +57,7 @@ class CaptchaManager:
 
         if task.handler or cli:  #: The captcha was handled
             self.tasks.append(task)
+            self.pyload.notify_change()
             return True
 
         task.error = self._("No Client connected for captcha decrypting")

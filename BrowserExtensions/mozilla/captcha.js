@@ -36,14 +36,19 @@
 
 (function() {
 	// this function listens to messages from the pyload main page
+	console.log('added message handler for pyload interactive captcha');
 	window.addEventListener('message', function(e) {
+	    debugger;
 		try {
 			var request = JSON.parse(e.data);
 		} catch(e) {
 			return
 		}
+
 		if(request.constructor === {}.constructor && request.actionCode === "pyloadActivateInteractive")
 		{
+		    debugger;
+		    console.log('pyloadActivateInteractive');
 			if (request.params.script) {
 				var sig = new KJUR.crypto.Signature({"alg": "SHA384withRSA", "prov": 'cryptojs/jsrsa'});
 				sig.init("-----BEGIN PUBLIC KEY-----\n" +
@@ -75,9 +80,9 @@
 					}
 				}
 
-				window.cgpyload = function(param_data)
+				var cgpyload = function(param_data)
 				{
-
+                    var gpyload = this;
 					var cookie_jar = request.params.cookie_jar;
 
 					this.isVisible = function(element) {
@@ -133,6 +138,7 @@
 					};
 
 					this.setSize = function(rect) {
+					debugger;
 						if (gpyload.data.rectDoc.left !== rect.left || gpyload.data.rectDoc.right !== rect.right || gpyload.data.rectDoc.top !== rect.top || gpyload.data.rectDoc.bottom !== rect.bottom) {
 							gpyload.data.rectDoc = rect;
 							var responseMessage = {actionCode: "pyloadIframeSize", params: {rect: rect}};
@@ -143,19 +149,24 @@
 					this.data = param_data;
 				};
 
-				window.gpyload = new cgpyload(
+				var gpyload = new cgpyload(
 					{
 						debounceInterval: 1500,
 						rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
 					});
 				try {
+				    debugger;
 					eval(request.params.script.code);
 				} catch(err) {
 					console.error("pyLoad: Script aborted: " + err.name + ": " + err.message + " (" + err.stack +")");
 					return;
 				}
-				if (typeof gpyload.getFrameSize === "function") {
-					var checkDocSize = gpyload.debounce(function() {
+
+				if (typeof gpyload.getFrameSize === "function")
+				{
+				    debugger;
+					var checkDocSize = gpyload.debounce(function()
+					{
 						window.scrollTo(0,0);
 						var rect = gpyload.getFrameSize();
 						gpyload.setSize(rect);
@@ -163,10 +174,13 @@
 					gpyload.observer = new MutationObserver(function(mutationsList) {
 						checkDocSize();
 					});
+
+					/*
 					var js_script = document.createElement("script");
 					js_script.type = "text/javascript";
 					js_script.innerHTML = "gpyload.observer.observe(document.querySelector('body'), {attributes:true, attributeOldValue:false, characterData:true, characterDataOldValue:false, childList:true, subtree:true});";
 					document.getElementsByTagName('body')[0].appendChild(js_script);
+					*/
 				}
 
 			}

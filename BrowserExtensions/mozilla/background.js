@@ -19,11 +19,23 @@ function wrapWindow(text, after) {
 		(function () {
 		    let findTop = function(childWindow)
 		    {
+		        var parent;
 		        if (typeof childWindow == 'undefined')
 		        {
 		            childWindow = origWindow;
 		        }
-		        if (childWindow.parent === childWindow)
+
+		        restriced = false;
+		        try
+		        {
+		            parent = childWindow.parent.location.href;
+		        }
+		        catch (e)
+		        {
+		            restriced = true;
+		        }
+
+		        if (restriced || childWindow.parent === childWindow)
 		        {
 		            topWindow = childWindow;
 		        }
@@ -32,6 +44,7 @@ function wrapWindow(text, after) {
 		            topWindow = findTop(childWindow.parent);
 		        }
 
+                console.log('top window: ', topWindow);
 		        return topWindow;
 		    }
 		    let revocableWindowProxy = Proxy.revocable(windowMockData, {
@@ -58,7 +71,7 @@ function wrapWindow(text, after) {
 		            {
 		                hasValue = true;
 		            }
-		            else if (name in origWindow)
+		            else if (key in origWindow)
 		            {
 		                hasValue = true;
 		            }
@@ -175,7 +188,8 @@ function cutcaptchaListener(details) {
 
 		// Just change any instance of Example in the HTTP response
 		// to WebExtension Example.
-		if (details.url.match(/\.js(?:\?(?:.*))?$/) && ! (details.url.match(/jquery\.js/)))
+		if (details.url.match(/\.js(?:\?(?:.*))?$/)
+		    && ! (details.url.match(/jquery(?:.*)\.js/)))
 		{
 		    str = str.replace('\\x61\\x64\\x64\\x45\\x76\\x65\\x6e\\x74\\x4c\\x69\\x73\\x74\\x65\\x6e\\x65\\x72', 'addMockedEventListener');
 		    str = str.replace('\\x72\\x65\\x6d\\x6f\\x76\\x65\\x45\\x76\\x65\\x6e\\x74\\x4c\\x69\\x73\\x74\\x65\\x6e\\x65\\x72', 'removeMockedEventListener');

@@ -80,17 +80,20 @@ class CutCaptcha(CaptchaService):
             {
                 window.CUTCAPTCHA_MISERY_KEY = gpyload.data.sitekey;
                 window.capResponseCallback = function(token) { gpyload.submitResponse(token) };
-                var js_script = document.createElement('script');
-                js_script.type = "text/javascript";
-                js_script.addEventListener('load', function() {
+                debugger;
+                fetch(request.params.script_src, {
+                    method: 'POST',
+                    mode: 'cors',
+                    redirect: 'follow',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then((data) => {
                     var DOMContentLoaded_event = document.createEvent("Event")
                     DOMContentLoaded_event.initEvent("DOMContentLoaded", true, true)
                     window.document.dispatchEvent(DOMContentLoaded_event)
                     gpyload.activated();
                 });
-                 
-                js_script.src = request.params.script_src;
-                document.getElementsByTagName('head')[0].appendChild(js_script);
                 
             };
 

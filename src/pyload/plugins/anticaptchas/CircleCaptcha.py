@@ -9,6 +9,7 @@ import math
 import operator
 import sys
 import urllib.request
+import base64
 
 from PIL import Image, ImageDraw
 
@@ -554,7 +555,6 @@ class CircleCaptcha(BaseOCR):
                 # if i_debug_save_file < 7:
                 # continue
                 im.save("output{}.png".format(i_debug_save_file), "png")
-                input("frame: {}".format(im))
 
             pix = im.load()
 
@@ -802,8 +802,15 @@ class CircleCaptcha(BaseOCR):
     def decrypt_from_web(self, url):
         file = io.BytesIO(urllib.request.urlopen(url).read())
         img = Image.open(file)
+        self.img = img
         coords = self.decrypt(img)
+
+        if coords is None:
+            coords = self.run_captcha_task(output_type='positional')
+
         self.log_info(self._("Coords: {}").format(coords))
+
+        return coords
 
     #: Return coordinates of opened circle (eg (x, y))
     def decrypt_from_file(self, filename):

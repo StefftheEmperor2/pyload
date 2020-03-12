@@ -22,10 +22,17 @@
   },
   "content_scripts": [
     {
+      "all_frames": true,
       "matches": [
-        "*://(?:www\\.)?filecrypt.cc/*",
-        "*://(?:www\\.)?filecrypt.co/*"],
-      "js": ["captcha.js"]
+        "*://filecrypt.cc/*",
+        "*://filecrypt.co/*",
+        "*://www.filecrypt.cc/*",
+        "*://www.filecrypt.co/*"
+      ],
+      "js": [
+        "jsrsasign-all-min.js",
+        "captcha.js"
+      ]
     }
   ],
   "browser_specific_settings": {

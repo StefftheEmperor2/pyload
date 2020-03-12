@@ -9,7 +9,7 @@ import urllib.parse
 from PIL import Image, ImageDraw, ImageFont
 
 from ..base.captcha_service import CaptchaService
-
+from pyload.core.network.http.exceptions import BadHeader
 
 class ReCaptcha(CaptchaService):
     __name__ = "ReCaptcha"
@@ -72,6 +72,8 @@ class ReCaptcha(CaptchaService):
                 return {top: top, left: left, bottom: bottom, right: right};
             };
 
+            debugger;
+            
             // function that is called when the captcha finished loading and is ready to interact
             window.pyloadCaptchaOnLoadCallback = function() {
                 grecaptcha.render (
@@ -86,9 +88,12 @@ class ReCaptcha(CaptchaService):
                 gpyload.activated();
             };
 
+            debugger;
+            
             if(typeof grecaptcha !== 'undefined' && grecaptcha) {
                 window.pyloadCaptchaOnLoadCallback();
             } else {
+                debugger;
                 var js_script = document.createElement('script');
                 js_script.type = "text/javascript";
                 js_script.src = "//www.google.com/recaptcha/api.js?onload=pyloadCaptchaOnLoadCallback&render=explicit";
@@ -360,16 +365,19 @@ class ReCaptcha(CaptchaService):
         is_blocked = False
         if not self.fallback_disabled:
             fallback_url = (
-                "http://www.google.com/recaptcha/api/fallback?k="
+                "https://www.google.com/recaptcha/api/fallback?k="
                 + key
                 + ("&stoken=" + secure_token if secure_token else "")
             )
 
-            html = self.pyfile.plugin.load(fallback_url, referer=self.pyfile.url)
-            is_blocked = (re.search(r'href="https://support.google.com/recaptcha.*"', html) is not None)
-            self.log_warning(
-                self._("reCAPTCHA noscript is blocked, trying reCAPTCHA interactive")
-            )
+            try:
+                html = self.pyfile.plugin.load(fallback_url, referer=self.pyfile.url)
+                is_blocked = (re.search(r'href="https://support.google.com/recaptcha.*"', html) is not None)
+                self.log_warning(
+                    self._("reCAPTCHA noscript is blocked, trying reCAPTCHA interactive")
+                )
+            except BadHeader as exc:
+                is_blocked=True
 
         if self.fallback_disabled or is_blocked:
             return self._challenge_v2js(key, secure_token=secure_token)

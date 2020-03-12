@@ -8,12 +8,8 @@ import base64
 import re
 import urllib.parse
 
-from cryptography.fernet import Fernet
-
-from pyload.core.network.cookie_jar import CookieJar
-from pyload.core.network.exceptions import Abort
 from pyload.core.network.http.exceptions import BadHeader
-from pyload.core.network.http.http_request import HTTPRequest
+from pyload.core.utils.misc import aes_decrypt
 
 from ..anticaptchas.CoinHive import CoinHive
 from ..anticaptchas.ReCaptcha import ReCaptcha
@@ -158,6 +154,7 @@ class FilecryptCc(BaseDecrypter):
                     return res
 
                 if re.search(self.CAPTCHA_PATTERN, res):
+                    self.log_warning(self._("Still found captcha on page .. retrying"))
                     return None
 
                 else:
@@ -217,6 +214,7 @@ class FilecryptCc(BaseDecrypter):
                 )
             )
             circle_captcha = CircleCaptcha(self.pyfile)
+            circle_captcha.cookie_jar.add_cookies(self.cookie_jar)
             captcha_url = urllib.parse.urljoin(self.pyfile.url, m.group(1))
 
             self.log_debug(f"Circle Captcha URL: {captcha_url}")
@@ -225,9 +223,12 @@ class FilecryptCc(BaseDecrypter):
                 captcha_url
             )
 
-            return self._filecrypt_load_url(
-                url, post={"button.x": captcha_code[0], "button.y": captcha_code[1]}, cookie_jar=self.cookie_jar
-            )
+            if captcha_code is None:
+                return None
+            else:
+                return self._filecrypt_load_url(
+                    url, post={"button.x": captcha_code[0], "button.y": captcha_code[1]}, cookie_jar=self.cookie_jar
+                )
 
         else:
             return None
@@ -283,6 +284,7 @@ class FilecryptCc(BaseDecrypter):
 
     def _handle_recaptcha_captcha(self, url):
         recaptcha = ReCaptcha(self.pyfile)
+        recaptcha.fallback_disabled = True
         captcha_key = recaptcha.detect_key()
 
         if captcha_key:
@@ -347,8 +349,7 @@ class FilecryptCc(BaseDecrypter):
         key = bytes.fromhex(jk)
 
         #: Decrypt
-        obj = Fernet(key)
-        text = obj.decrypt(base64.b64decode(crypted))
+        text = aes_decrypt(key, base64.b64decode(crypted))
 
         #: Extract links
         text = text.replace("\x00", "").replace("\r", "")
