@@ -77,10 +77,6 @@ function wrapWindow(text, after) {
 		            }
 
 		            return hasValue;
-		        },
-		        getPrototypeOf: function(target)
-		        {
-		            return Object.getPrototypeOf(origWindow);
 		        }
 		    });
 			let window = revocableWindowProxy.proxy;
@@ -132,7 +128,9 @@ function filecryptListener(details) {
 		    if (details.url.match(/prototype\.js/))
 			{
                 after = 'origWindow.Prototype = Prototype; origWindow.Class = Class;'
-			    after += 'origWindow.Enumerable = Enumerable; origWindow[\'$H\'] = $H; origWindow[\'$w\'] = $w;';
+			    after += 'origWindow.Enumerable = Enumerable;'
+			    after += 'origWindow[\'$H\'] = $H;';
+				after += 'origWindow[\'$w\'] = $w;';
 			    after += 'origWindow[\'Ajax\'] = Ajax;';
 			    after += 'origWindow[\'Field\'] = Field;';
                 after += 'origWindow[\'Form\'] = Form;';

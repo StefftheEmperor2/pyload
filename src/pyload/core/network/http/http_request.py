@@ -480,6 +480,10 @@ class HTTPRequest:
 
         self.c.setopt(pycurl.HTTPHEADER, default_headers.get_list())
 
+        """Temporary - remove later !!! """
+        self.c.setopt(pycurl.SSL_VERIFYPEER, 0)
+        self.c.setopt(pycurl.SSL_VERIFYHOST, 0)
+
         if not follow_location:
             self.c.setopt(pycurl.FOLLOWLOCATION, 0)
 

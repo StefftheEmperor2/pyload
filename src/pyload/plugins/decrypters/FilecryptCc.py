@@ -285,7 +285,7 @@ class FilecryptCc(BaseDecrypter):
     def _handle_recaptcha_captcha(self, url):
         recaptcha = ReCaptcha(self.pyfile)
         recaptcha.fallback_disabled = True
-        captcha_key = recaptcha.detect_key()
+        captcha_key = recaptcha.detect_key(data=self.data)
 
         if captcha_key:
             self.captcha = recaptcha

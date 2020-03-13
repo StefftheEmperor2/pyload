@@ -1,44 +1,115 @@
 // ==UserScript==
-// @name         pyLoad Script for Interactive Captcha
-// @namespace    https://pyload.net/
-// @version      0.19
-// @author       Michi-F, GammaC0de
+// @name		 pyLoad Script for Interactive Captcha
+// @namespace	https://pyload.net/
+// @version	  0.19
+// @author	   Michi-F, GammaC0de
 // @description  pyLoad Script for Interactive Captcha
-// @homepage     https://github.com/pyload/pyload
-// @icon         https://raw.githubusercontent.com/pyload/pyload/stable/module/web/media/img/favicon.ico
-// @updateURL    https://raw.githubusercontent.com/pyload/pyload/stable/module/web/media/js/captcha-interactive.user.js
+// @homepage	 https://github.com/pyload/pyload
+// @icon		 https://raw.githubusercontent.com/pyload/pyload/stable/module/web/media/img/favicon.ico
+// @updateURL	https://raw.githubusercontent.com/pyload/pyload/stable/module/web/media/js/captcha-interactive.user.js
 // @downloadURL  https://raw.githubusercontent.com/pyload/pyload/stable/module/web/media/js/captcha-interactive.user.js
 // @supportURL   https://github.com/pyload/pyload/issues
-// @grant        none
-// @run-at       document-start
-// @require      https://kjur.github.io/jsrsasign/jsrsasign-all-min.js
+// @grant		none
+// @run-at	   document-start
+// @require	  https://kjur.github.io/jsrsasign/jsrsasign-all-min.js
 //
-// @match        *://*/*
+// @match		*://*/*
 //
 // ==/UserScript==
 
 /*
-    Copyright (C) 2018, Michi-F
+	Copyright (C) 2018, Michi-F
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Affero General Public License as
+	published by the Free Software Foundation, either version 3 of the
+	License, or (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Affero General Public License for more details.
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU Affero General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 (function() {
+	let methods = {
+		"recaptcha": function(request, gpyload)
+		{
+			while(document.children[0].childElementCount > 0) {
+				document.children[0].removeChild(document.children[0].children[0]);
+			}
+			document.children[0].innerHTML = '<html><head></head><body style="display:inline-block;"><div id="captchadiv" style="display: inline-block;"></div></body></html>';
+
+			gpyload.data.sitekey = request.params.sitekey;
+
+			gpyload.getFrameSize = function() {
+				var rectAnchor =  {top: 0, right: 0, bottom: 0, left: 0},
+					rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
+					rect;
+				var anchor = document.body.querySelector("iframe[src*='/anchor']");
+				if (anchor !== null && gpyload.isVisible(anchor)) {
+					rect = anchor.getBoundingClientRect();
+					rectAnchor = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
+				}
+				var popup = document.body.querySelector("iframe[src*='/bframe']");
+				if (popup !== null && gpyload.isVisible(popup)) {
+					rect = popup.getBoundingClientRect();
+					rectPopup = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
+				}
+				var left = Math.round(Math.min(rectAnchor.left, rectAnchor.right, rectPopup.left, rectPopup.right));
+				var right = Math.round(Math.max(rectAnchor.left, rectAnchor.right, rectPopup.left, rectPopup.right));
+				var top = Math.round(Math.min(rectAnchor.top, rectAnchor.bottom, rectPopup.top, rectPopup.bottom));
+				var bottom = Math.round(Math.max(rectAnchor.top, rectAnchor.bottom, rectPopup.top, rectPopup.bottom));
+				return {top: top, left: left, bottom: bottom, right: right};
+			};
+
+			// function that is called when the captcha finished loading and is ready to interact
+			window['pyloadCaptchaOnLoadCallback'] = function() {
+				grecaptcha.render(
+					"captchadiv",
+					{size: "compact",
+					 'sitekey': gpyload.data.sitekey,
+					 'callback': function() {
+						var recaptchaResponse = grecaptcha.getResponse(); // get captcha response
+						gpyload.submitResponse(recaptchaResponse);
+					 }}
+				);
+				gpyload.activated();
+			};
+
+			window['test'] = 'bla';
+			console.log('registered', 'pyloadCaptchaOnLoadCallback');
+			let onDocumentLoaded = function(event)
+			{
+				if(typeof grecaptcha !== 'undefined' && grecaptcha) {
+					window.pyloadCaptchaOnLoadCallback();
+				} else {
+					var js_script = document.createElement('script');
+					js_script.type = "text/javascript";
+					js_script.src = "//www.google.com/recaptcha/api.js?onload=pyloadCaptchaOnLoadCallback&render=explicit";
+					js_script.async = true;
+					document.getElementsByTagName('head')[0].appendChild(js_script);
+				}
+			};
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', (event) => {
+					onDocumentLoaded(event);
+				});
+			}
+			else
+			{
+				onDocumentLoaded();
+			}
+
+		}
+	};
 	// this function listens to messages from the pyload main page
 	console.log('added message handler for pyload interactive captcha');
 	window.addEventListener('message', function(e) {
-	    debugger;
 		try {
 			var request = JSON.parse(e.data);
 		} catch(e) {
@@ -47,21 +118,8 @@
 
 		if(request.constructor === {}.constructor && request.actionCode === "pyloadActivateInteractive")
 		{
-		    debugger;
-		    console.log('pyloadActivateInteractive');
-			if (request.params.script) {
-				var sig = new KJUR.crypto.Signature({"alg": "SHA384withRSA", "prov": 'cryptojs/jsrsa'});
-				sig.init("-----BEGIN PUBLIC KEY-----\n" +
-					"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuEHE4uAeTeEQjIwB//YH\n" +
-					"Gl5e058aJRCRyOvApv1iC1ZQgXGHopgEd528+AtkAZKdCRkoNCWda7L/hROpZNjq\n" +
-					"xgO5NjjlBnotntQiZ6xr7A4Kfdctmw1DPcv/dkp6SXRpAAw8BE9CctZ3H7cE/4UT\n" +
-					"FIJOYQQXF2dcBTWLnUAjesNoHBz0uHTdvBIwJdfdUIrNMI4IYXL4mq9bpKNvrwrb\n" +
-					"iNhSqN0yV8sanofZmDX4JUmVGpWIkpX0u+LA4bJlaylwPxjuWyIn5OBED0cdqpbO\n" +
-					"7t7Qtl5Yu639DF1eZDR054d9OB3iKZX1a6DTg4C5DWMIcU9TsLDm/JJKGLWRxcJJ\n" +
-					"fwIDAQAB\n" +
-					"-----END PUBLIC KEY----- ");
-				sig.updateString(request.params.script.code);
-
+			console.log('pyloadActivateInteractive');
+			if (request.params.cmd == 'pyloadCaptchaInteractive') {
 				if (typeof request.params.cookie_jar != 'undefined')
 				{
 					for (let key in request.params.cookie_jar)
@@ -80,10 +138,11 @@
 					}
 				}
 
-				var cgpyload = function(param_data)
+				let cgpyload = function(paramData)
 				{
-                    var gpyload = this;
-					var cookie_jar = request.params.cookie_jar;
+					let gpyload = this;
+					let cookieJar = null;
+					let frameSize = null;
 
 					this.isVisible = function(element) {
 						var style = window.getComputedStyle(element);
@@ -138,7 +197,7 @@
 					};
 
 					this.setSize = function(rect) {
-					debugger;
+						debugger;
 						if (gpyload.data.rectDoc.left !== rect.left || gpyload.data.rectDoc.right !== rect.right || gpyload.data.rectDoc.top !== rect.top || gpyload.data.rectDoc.bottom !== rect.bottom) {
 							gpyload.data.rectDoc = rect;
 							var responseMessage = {actionCode: "pyloadIframeSize", params: {rect: rect}};
@@ -146,25 +205,54 @@
 						}
 					};
 
-					this.data = param_data;
+					this.setFrameSize = function(paramFrameSize)
+					{
+						frameSize = paramFrameSize;
+					};
+
+					this.getFrameSize = function()
+					{
+						return frameSize;
+					};
+
+					this.setCookieJar = function(paramCookieJar)
+					{
+						cookieJar = paramCookieJar;
+					};
+
+					this.getCookieJar = function()
+					{
+						return cookieJar
+					}
+
+					this.data = paramData;
 				};
 
-				var gpyload = new cgpyload(
+				let gpyload = new cgpyload(
 					{
 						debounceInterval: 1500,
 						rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
 					});
-				try {
-				    debugger;
-					eval(request.params.script.code);
-				} catch(err) {
-					console.error("pyLoad: Script aborted: " + err.name + ": " + err.message + " (" + err.stack +")");
-					return;
+
+				window['test'] = 'bla';
+
+				if (typeof request.params.method != 'undefined')
+				{
+					methods[request.params.method].call(window, request, gpyload);
 				}
+				else
+				{
+					try {
+						eval(request.params.script.code);
+					} catch(err) {
+						console.error("pyLoad: Script aborted: " + err.name + ": " + err.message + " (" + err.stack +")");
+					return;
+					}
+				}
+
 
 				if (typeof gpyload.getFrameSize === "function")
 				{
-				    debugger;
 					var checkDocSize = gpyload.debounce(function()
 					{
 						window.scrollTo(0,0);

@@ -14,7 +14,9 @@
     "webRequest",
     "webRequestBlocking",
     "*://filecrypt.cc/*",
+    "*://www.filecrypt.cc/*",
     "*://filecrypt.co/*",
+    "*://www.filecrypt.co/*",
     "*://cutcaptcha.com/*"
   ],
   "background": {
@@ -32,7 +34,8 @@
       "js": [
         "jsrsasign-all-min.js",
         "captcha.js"
-      ]
+      ],
+      "run_at": "document_start"
     }
   ],
   "browser_specific_settings": {

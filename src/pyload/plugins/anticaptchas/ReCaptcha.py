@@ -459,12 +459,10 @@ class ReCaptcha(CaptchaService):
             "url": self.pyfile.url,
             "sitekey": key,
             "securetoken": secure_token,
-            "script": {
-                "signature": self.RECAPTCHA_INTERACTIVE_SIG,
-                "code": self.RECAPTCHA_INTERACTIVE_JS,
-            },
+            "method": 'recaptcha',
             "cookie_jar": None,
-            "user_agent": user_agent
+            "user_agent": user_agent,
+            "cmd": 'pyloadCaptchaInteractive'
         }
 
         result = self.decrypt_interactive(params, timeout=300)
