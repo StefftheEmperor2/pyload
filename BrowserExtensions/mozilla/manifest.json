@@ -9,7 +9,6 @@
     "48": "icons/pyload.svg",
     "96": "icons/pyload.svg"
   },
-
   "permissions": [
     "webRequest",
     "webRequestBlocking",
@@ -17,7 +16,9 @@
     "*://www.filecrypt.cc/*",
     "*://filecrypt.co/*",
     "*://www.filecrypt.co/*",
-    "*://cutcaptcha.com/*"
+    "*://cutcaptcha.com/*",
+    "*://gstatic.com/*",
+    "*://google.com/*"
   ],
   "background": {
     "scripts": ["background.js"]

@@ -34,18 +34,21 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-(function() {
+(function(localWindow) {
+	localWindow.foo="bar";
 	let methods = {
 		"recaptcha": function(request, gpyload)
 		{
-			while(document.children[0].childElementCount > 0) {
+			while(document.children[0].childElementCount > 0)
+			{
 				document.children[0].removeChild(document.children[0].children[0]);
 			}
 			document.children[0].innerHTML = '<html><head></head><body style="display:inline-block;"><div id="captchadiv" style="display: inline-block;"></div></body></html>';
 
 			gpyload.data.sitekey = request.params.sitekey;
 
-			gpyload.getFrameSize = function() {
+			gpyload.getFrameSize = function()
+			{
 				var rectAnchor =  {top: 0, right: 0, bottom: 0, left: 0},
 					rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
 					rect;
@@ -67,7 +70,9 @@
 			};
 
 			// function that is called when the captcha finished loading and is ready to interact
-			window['pyloadCaptchaOnLoadCallback'] = function() {
+			let callbackString = `window.pyloadCaptchaOnLoadCallback = function()
+			{
+				console.log('captcha loaded');
 				grecaptcha.render(
 					"captchadiv",
 					{size: "compact",
@@ -77,16 +82,24 @@
 						gpyload.submitResponse(recaptchaResponse);
 					 }}
 				);
+				debugger;
 				gpyload.activated();
-			};
+			};`;
 
-			window['test'] = 'bla';
 			console.log('registered', 'pyloadCaptchaOnLoadCallback');
 			let onDocumentLoaded = function(event)
 			{
 				if(typeof grecaptcha !== 'undefined' && grecaptcha) {
 					window.pyloadCaptchaOnLoadCallback();
 				} else {
+					debugger;
+
+					var js_script = document.createElement('script');
+					js_script.type = "text/javascript";
+					js_script.textContent = callbackString;
+					document.getElementsByTagName('head')[0].appendChild(js_script);
+					js_script.remove();
+
 					var js_script = document.createElement('script');
 					js_script.type = "text/javascript";
 					js_script.src = "//www.google.com/recaptcha/api.js?onload=pyloadCaptchaOnLoadCallback&render=explicit";
@@ -95,7 +108,9 @@
 				}
 			};
 
-			if (document.readyState === 'loading') {
+			if (document.readyState === 'loading')
+			{
+				console.log('deferring recaptcha loading');
 				document.addEventListener('DOMContentLoaded', (event) => {
 					onDocumentLoaded(event);
 				});
@@ -274,4 +289,4 @@
 			}
 		}
 	});
-})();
+})(this);
