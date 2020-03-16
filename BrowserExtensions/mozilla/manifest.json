@@ -10,6 +10,7 @@
     "96": "icons/pyload.svg"
   },
   "permissions": [
+    "cookies",
     "webRequest",
     "webRequestBlocking",
     "*://filecrypt.cc/*",
@@ -38,6 +39,9 @@
       ],
       "run_at": "document_start"
     }
+  ],
+  "web_accessible_resources": [
+    "page-scripts/*"
   ],
   "browser_specific_settings": {
     "gecko": {

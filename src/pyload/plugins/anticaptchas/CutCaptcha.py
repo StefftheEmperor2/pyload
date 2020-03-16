@@ -141,13 +141,11 @@ class CutCaptcha(CaptchaService):
         params = {
             "url": self.pyfile.url,
             "sitekey": key,
-            "script": {
-                "signature": self.CUTCAPTCHA_INTERACTIVE_SIG,
-                "code": self.CUTCAPTCHA_INTERACTIVE_JS,
-            },
+            "method": 'cutcaptcha',
             "cookie_jar": self.pyfile.plugin.req.cookie_jar,
             "user_agent": user_agent,
-            "script_src": script_src
+            "script_src": script_src,
+            "cmd": 'pyloadCaptchaInteractive'
         }
 
         result = self.decrypt_interactive(params, timeout=300)

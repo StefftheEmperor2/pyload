@@ -1,5 +1,5 @@
 
-function wrapWindow(text, after) {
+function wrapWindow(text, after, whitelist) {
 	 return `(function () {
 	    window.document['addMockedEventListener'] = function()
 	    {
@@ -17,25 +17,43 @@ function wrapWindow(text, after) {
 		    }
 		};
 		(function () {
-		    let findTop = function(childWindow)
+		    let findTop = function(childWindow, whitelist)
 		    {
 		        var parent;
-		        if (typeof childWindow == 'undefined')
+		        if (typeof childWindow == 'undefined' || childWindow === null)
 		        {
 		            childWindow = origWindow;
 		        }
 
-		        restriced = false;
-		        try
+		        if (typeof whitelist == 'undefined')
 		        {
-		            parent = childWindow.parent.location.href;
-		        }
-		        catch (e)
-		        {
-		            restriced = true;
+		            whitelist = [];
 		        }
 
-		        if (restriced || childWindow.parent === childWindow)
+		        restricted = false;
+
+                try
+                {
+                    if ( ! whitelist.includes(childWindow.location.host))
+                    {
+                        try
+                        {
+                            parent = childWindow.parent.location.href;
+                        }
+                        catch (e)
+                        {
+                            restricted = true;
+                        }
+                    }
+                }
+                catch (e)
+                {
+                    restricted = true;
+                }
+
+
+
+		        if (restricted || childWindow.parent === childWindow)
 		        {
 		            topWindow = childWindow;
 		        }
@@ -82,7 +100,7 @@ function wrapWindow(text, after) {
 			let window = revocableWindowProxy.proxy;
 			let top = undefined;
 
-            windowMockData['top'] = findTop();
+            windowMockData['top'] = findTop(null, `+JSON.stringify(whitelist)+`);
             top = window.top;
 
 			(function() {`+text+after+`}).apply(window);
@@ -105,6 +123,7 @@ function decodeChunks(chunkData, decoder)
 	}
 	return str;
 }
+
 function filecryptListener(details) {
 	let filter = browser.webRequest.filterResponseData(details.requestId);
 	let decoder = new TextDecoder("utf-8");
@@ -157,11 +176,13 @@ function filecryptListener(details) {
                 replacedStr = replacedStr.replace('a.getComputedStyle', "origWindow.getComputedStyle");
 			}
 			replacedStr = replacedStr.replace('window.addEventListener(', 'origWindow.addEventListener(');
+			replacedStr = replacedStr.replace('window.XMLHttpRequest', 'origWindow.XMLHttpRequest')
 			filter.write(encoder.encode(replacedStr));
 		}
 		else
 		{
-			filter.write(encoder.encode(str));
+		    replacedStr = str.replace(/<script src="(https:\/\/cutcaptcha.com\/captcha(?:[a-zA-Z0-9\.\/]*))"><\/script>/g, "<script src=\"$1\" defer></script>");
+			filter.write(encoder.encode(replacedStr));
 		}
 
 		filter.close();
@@ -210,7 +231,7 @@ function cutcaptchaListener(details) {
                 {
                     after = 'origWindow[\'MetrikaLog\'] = MetrikaLog';
                 }
-                replacedStr += str.substring(lastEnd, match.index)+'<script>'+wrapWindow(match[1], after)+'</script>';
+                replacedStr += str.substring(lastEnd, match.index)+'<script>'+wrapWindow(match[1], after, ['cutcaptcha.com'])+'</script>';
                 lastEnd=match.index+match[0].length;
             }
             replacedStr+=str.substring(lastEnd);

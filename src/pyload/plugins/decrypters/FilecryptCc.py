@@ -292,7 +292,7 @@ class FilecryptCc(BaseDecrypter):
             response, challenge = recaptcha.challenge(captcha_key)
 
             return self._filecrypt_load_url(
-                url, post={"g-recaptcha-response": response}
+                url, post={"g-recaptcha-response": response}, cookie_jar=self.cookie_jar
             )
 
         else:
