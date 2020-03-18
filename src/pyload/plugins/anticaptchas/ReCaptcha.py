@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 from ..base.captcha_service import CaptchaService
 from pyload.core.network.http.exceptions import BadHeader
 
+
 class ReCaptcha(CaptchaService):
     __name__ = "ReCaptcha"
     __type__ = "anticaptcha"
@@ -34,13 +35,13 @@ class ReCaptcha(CaptchaService):
     STOKEN_V2_PATTERN = r'data-stoken=["\']([\w\-]+)'
 
     RECAPTCHA_INTERACTIVE_SIG = (
-        "7b99386315b3e035285946b842049575fc69a88ccc219e1bc96a9afd0f3c4b7456f09d36bf3dc530"
-        + "a08cd50f1b3128716cf727b30f7de4ab1513f15bb82776e84404089a764c6305d9c6033c99f8514e"
-        + "249bc3fd5530b475c00059797ce5a45d131adb626a440366af9acc9a50a3a7327b9d3dc28b59f83f"
-        + "32129feb89e0cfb74521c306e8ac0b9fff9df31d453eedc54a17d41528c2d866363fc13cb524ad77"
-        + "60483b28bf4a347de4a8b2b1480f83f66c4408ad9dbfec78f6f1525b8507b6e52cdd13e13f8e3bfc"
-        + "0bb5dd1860e6fc5db99ef0c915fd626c3aaec0bb5ead3a668ebb31dd2a08eacaefffdf51e3a0ba31"
-        + "cb636da134c24633f2b2b38f56dfbb92"
+            "7b99386315b3e035285946b842049575fc69a88ccc219e1bc96a9afd0f3c4b7456f09d36bf3dc530"
+            + "a08cd50f1b3128716cf727b30f7de4ab1513f15bb82776e84404089a764c6305d9c6033c99f8514e"
+            + "249bc3fd5530b475c00059797ce5a45d131adb626a440366af9acc9a50a3a7327b9d3dc28b59f83f"
+            + "32129feb89e0cfb74521c306e8ac0b9fff9df31d453eedc54a17d41528c2d866363fc13cb524ad77"
+            + "60483b28bf4a347de4a8b2b1480f83f66c4408ad9dbfec78f6f1525b8507b6e52cdd13e13f8e3bfc"
+            + "0bb5dd1860e6fc5db99ef0c915fd626c3aaec0bb5ead3a668ebb31dd2a08eacaefffdf51e3a0ba31"
+            + "cb636da134c24633f2b2b38f56dfbb92"
     )
 
     RECAPTCHA_INTERACTIVE_JS = """
@@ -266,8 +267,8 @@ class ReCaptcha(CaptchaService):
                 for y in range(3):
                     tile_index_pos = {
                         "x": x * tile_size["width"]
-                        + (tile_size["width"] // 2)
-                        - (tile_index_size["width"] // 2),
+                             + (tile_size["width"] // 2)
+                             - (tile_index_size["width"] // 2),
                         "y": y * tile_size["height"],
                     }
 
@@ -315,7 +316,7 @@ class ReCaptcha(CaptchaService):
                     _eol = challenge_msg.rfind(" ", 0, _eol)
                     if _eol > 0:
                         challenge_msg = (
-                            challenge_msg[:_eol] + "\n" + challenge_msg[_eol + 1 :]
+                                challenge_msg[:_eol] + "\n" + challenge_msg[_eol + 1:]
                         )
                         _sol = _eol + 1
                 else:
@@ -335,7 +336,7 @@ class ReCaptcha(CaptchaService):
 
             margin = 5
             text_area_height = (
-                text_area_height + margin * 2
+                    text_area_height + margin * 2
             )  #: add some margin on top and bottom of text
 
             img2 = Image.new(
@@ -365,9 +366,9 @@ class ReCaptcha(CaptchaService):
         is_blocked = False
         if not self.fallback_disabled:
             fallback_url = (
-                "https://www.google.com/recaptcha/api/fallback?k="
-                + key
-                + ("&stoken=" + secure_token if secure_token else "")
+                    "https://www.google.com/recaptcha/api/fallback?k="
+                    + key
+                    + ("&stoken=" + secure_token if secure_token else "")
             )
 
             try:
@@ -377,7 +378,7 @@ class ReCaptcha(CaptchaService):
                     self._("reCAPTCHA noscript is blocked, trying reCAPTCHA interactive")
                 )
             except BadHeader as exc:
-                is_blocked=True
+                is_blocked = True
 
         if self.fallback_disabled or is_blocked:
             return self._challenge_v2js(key, secure_token=secure_token)
@@ -419,13 +420,13 @@ class ReCaptcha(CaptchaService):
             response = self.decrypt_image(img)
 
             post_str = (
-                "c="
-                + urllib.parse.quote_plus(challenge)
-                + "".join(
-                    "&response={}".format(str(int(k) - 1))
-                    for k in response
-                    if k.isdigit()
-                )
+                    "c="
+                    + urllib.parse.quote_plus(challenge)
+                    + "".join(
+                "&response={}".format(str(int(k) - 1))
+                for k in response
+                if k.isdigit()
+            )
             )
             html = self.pyfile.plugin.load(
                 fallback_url, post=post_str, referer=fallback_url
@@ -468,6 +469,81 @@ class ReCaptcha(CaptchaService):
         result = self.decrypt_interactive(params, timeout=300)
 
         return result
+
+    @classmethod
+    def get_interactive_script(cls):
+        return """while(document.children[0].childElementCount > 0)
+        {
+            document.children[0].removeChild(document.children[0].children[0]);
+        }
+        document.children[0].innerHTML = '<html><head></head><body style="display:inline-block;"><div id="captchadiv" style="display: inline-block;"></div></body></html>';
+        pyload.load_js(browser.runtime.getURL('page-scripts/mutationObserver.js'));
+        pyload.data.sitekey = request.params.sitekey;
+        
+        pyload.getFrameSize = function()
+        {
+            var rectAnchor =  {top: 0, right: 0, bottom: 0, left: 0},
+                rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
+                rect;
+            var anchor = document.body.querySelector("iframe[src*='/anchor']");
+            if (anchor !== null && pyload.isVisible(anchor)) {
+                rect = anchor.getBoundingClientRect();
+                rectAnchor = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
+            }
+            var popup = document.body.querySelector("iframe[src*='/bframe']");
+            if (popup !== null && pyload.isVisible(popup)) {
+                rect = popup.getBoundingClientRect();
+                rectPopup = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
+            }
+            var left = Math.round(Math.min(rectAnchor.left, rectAnchor.right, rectPopup.left, rectPopup.right));
+            var right = Math.round(Math.max(rectAnchor.left, rectAnchor.right, rectPopup.left, rectPopup.right));
+            var top = Math.round(Math.min(rectAnchor.top, rectAnchor.bottom, rectPopup.top, rectPopup.bottom));
+            var bottom = Math.round(Math.max(rectAnchor.top, rectAnchor.bottom, rectPopup.top, rectPopup.bottom));
+            return {top: top, left: left, bottom: bottom, right: right};
+        };
+        
+        // function that is called when the captcha finished loading and is ready to interact
+        
+        console.log('registered', 'pyloadCaptchaOnLoadCallback');
+        let onDocumentLoaded = function(event)
+        {
+            if(typeof grecaptcha !== 'undefined' && grecaptcha) {
+                window.pyloadCaptchaOnLoadCallback();
+            } else {
+                var page_script = document.createElement('script');
+                page_script.type = "text/javascript";
+                page_script.onload = function()
+                {
+                    window.addEventListener('pyload.siteKeySet', function(event) {
+                        var js_script = document.createElement('script');
+                        js_script.type = "text/javascript";
+                        js_script.src = "//www.google.com/recaptcha/api.js?onload=pyloadCaptchaOnLoadCallback&render=explicit";
+                        js_script.async = true;
+                        document.getElementsByTagName('head')[0].appendChild(js_script);
+                    });
+                    let event = new CustomEvent('pyload.setSiteKey', {"detail": pyload.data.sitekey});
+                    window.dispatchEvent(event);
+        
+                };
+                page_script.src = browser.runtime.getURL('page-scripts/recaptcha/pyloadCaptchaOnLoadCallback.js');
+                document.getElementsByTagName('head')[0].appendChild(page_script);
+                page_script.remove();
+        
+            }
+        };
+        
+        if (document.readyState === 'loading')
+        {
+            console.log('deferring recaptcha loading');
+            document.addEventListener('DOMContentLoaded', (event) => {
+                onDocumentLoaded(event);
+            });
+        }
+        else
+        {
+            onDocumentLoaded();
+        }
+        """
 
 
 if __name__ == "__main__":

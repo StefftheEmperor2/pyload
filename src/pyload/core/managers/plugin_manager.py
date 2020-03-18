@@ -5,8 +5,12 @@ import importlib
 import os
 import re
 import sys
+import json
+import time
+import hashlib
 from ast import literal_eval
 from itertools import chain
+from functools import reduce
 
 import semver
 
@@ -38,9 +42,104 @@ class PluginManager:
 
         self.plugins = {}
         self.create_index()
-
+        self.create_browser_extensions()
         # register for import addon
         sys.meta_path.append(self)
+
+    def create_browser_extensions(self):
+        permissions = []
+        matches = []
+        captchas = {}
+
+        for crypter_info in self.crypter_plugins.values():
+            crypter = self.load_class('decrypter', crypter_info['name'])
+            permissions.extend(crypter.get_browser_extension_permissions())
+            matches.extend(crypter.get_browser_extension_matches())
+
+        for captcha_info in self.captcha_plugins.values():
+            captcha_plugin = self.load_class('anticaptcha', captcha_info['name'])
+            interactive_script = captcha_plugin.get_interactive_script()
+            permissions.extend(captcha_plugin.get_browser_extension_permissions())
+            matches.extend(captcha_plugin.get_browser_extension_matches())
+            if interactive_script is not None:
+                captchas[captcha_info['name']] = {"version": captcha_plugin.__version__, "script": interactive_script}
+
+        permissions = reduce(lambda l, x: l.append(x) or l if x not in l else l, permissions, [])
+        matches = reduce(lambda l, x: l.append(x) or l if x not in l else l, matches, [])
+
+        permissions.sort()
+        matches.sort()
+
+        browser_extension_dir = os.path.join(PKGDIR, "BrowserExtensions/mozilla")
+        hash_file = os.path.join(browser_extension_dir, 'plugins.hash')
+        do_build_browser_extension = False
+        if os.path.exists(hash_file):
+            hash = str(self.hash_browser_extension(permissions, matches, captchas))
+            if hash != self.file_get_contents(hash_file):
+                do_build_browser_extension = True
+        else:
+            do_build_browser_extension = True
+
+        if do_build_browser_extension:
+            self.build_browser_extensions(permissions, matches, captchas)
+
+    def hash_browser_extension(self, permissions, matches, captchas):
+        captcha_list = []
+        for name, captcha in captchas.items():
+            captcha_list.append(name+'::'+captcha['version'])
+        captcha_list.sort()
+        m = hashlib.md5()
+        m.update(("".join(permissions)+"".join(matches)+"".join(captcha_list)).encode('UTF-8'))
+        return m.hexdigest()
+
+    def build_browser_extensions(self, permissions, matches, captchas):
+        browser_extension_dir = os.path.join(PKGDIR, "BrowserExtensions/mozilla/")
+        manifest_template_file = os.path.join(browser_extension_dir, 'manifest-template.json')
+        manifest_file = os.path.join(browser_extension_dir, 'manifest.json')
+        with open(manifest_template_file) as f:
+            manifest = json.load(f)
+
+        manifest['permissions'].extend(permissions)
+        manifest['content_scripts'][0]['matches'].extend(matches)
+        manifest['version'] += '.'+str(int(time.time()))
+        with open(manifest_file, 'w') as json_file:
+            json.dump(manifest, json_file)
+
+        captcha_js_template_file = os.path.join(browser_extension_dir, 'captcha-template.js')
+        captcha_string = self.file_get_contents(captcha_js_template_file)
+        captcha_interactive_scripts = ''
+        is_first = True
+        for captcha_name, captcha_info in captchas.items():
+            if not is_first:
+                captcha_interactive_scripts += ",\n"
+            captcha_interactive_scripts += "\t\t\""+captcha_name+"\": function(request, pyload) {\n\t\t\t" \
+                + captcha_info['script'] \
+                + "\n}"
+            is_first = False
+
+        captcha_js_file = os.path.join(browser_extension_dir, 'captcha.js')
+        self.file_put_contents(captcha_js_file, captcha_string.replace('%%%INTERACTIVE_SCRIPTS%%%', captcha_interactive_scripts))
+        self.file_put_contents(
+            os.path.join(
+                browser_extension_dir, 'plugins.hash'
+            ),
+            str(self.hash_browser_extension(permissions, matches, captchas)))
+
+
+    @staticmethod
+    def file_get_contents(filename):
+        if os.path.exists(filename):
+            fp = open(filename, "r")
+            content = fp.read()
+            fp.close()
+            return content
+
+    @staticmethod
+    def file_put_contents(filename, content):
+        fp = open(filename, "w")
+        fp.write(content)
+        fp.close()
+
 
     def create_index(self):
         """
@@ -405,6 +504,8 @@ class PluginManager:
                     module_type = 'decrypters'
                 elif module_type == 'downloader':
                     module_type = 'downloaders'
+                elif module_type == 'anticaptcha':
+                    module_type = 'anticaptchas'
 
                 newname = self.ROOT + module_type + '.' + name
         else:

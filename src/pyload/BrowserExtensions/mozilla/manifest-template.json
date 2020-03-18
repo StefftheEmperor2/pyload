@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "pyLoad",
-  "version": "1.0",
+  "version": "1.0.0",
 
   "description": "Handles interactive Captcha",
 
@@ -12,14 +12,7 @@
   "permissions": [
     "cookies",
     "webRequest",
-    "webRequestBlocking",
-    "*://filecrypt.cc/*",
-    "*://www.filecrypt.cc/*",
-    "*://filecrypt.co/*",
-    "*://www.filecrypt.co/*",
-    "*://cutcaptcha.com/*",
-    "*://gstatic.com/*",
-    "*://google.com/*"
+    "webRequestBlocking"
   ],
   "background": {
     "scripts": ["background.js"]
@@ -28,10 +21,7 @@
     {
       "all_frames": true,
       "matches": [
-        "*://filecrypt.cc/*",
-        "*://filecrypt.co/*",
-        "*://www.filecrypt.cc/*",
-        "*://www.filecrypt.co/*"
+
       ],
       "js": [
         "jsrsasign-all-min.js",

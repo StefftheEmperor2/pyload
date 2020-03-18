@@ -158,6 +158,86 @@ class CutCaptcha(CaptchaService):
     def recognize(self, image):
         pass
 
+    @classmethod
+    def get_interactive_script(cls):
+        return """pyload.data.sitekey = request.params.sitekey;
+
+            window.dispatchEvent(new Event("beforeunload", {
+              bubbles: true,
+              cancelable: true
+            }));
+
+            window.dispatchEvent(new Event("unload", {
+              bubbles: true,
+              cancelable: true
+            }));
+
+            pyload.load_js(browser.runtime.getURL('page-scripts/deleteEventListeners.js'), function() {
+                pyload.load_js(browser.runtime.getURL('page-scripts/cleanupHtml.js'), function() {
+                pyload.eval_js('window.document.body.innerHTML = \'<div id="puzzle-captcha" aria-style="mobile"></div>\';');
+                    window.addEventListener('pyload.mutationObserverRegistered', function() {
+
+                        pyload.eval_js(`var CUTCAPTCHA_MISERY_KEY = "`+pyload.data.sitekey+`";
+                            window.capResponseCallback = function(token) {
+                                let event = new CustomEvent("pyload.submitResponse", { "detail": token });
+                                window.dispatchEvent(event);
+                            };`);
+
+                        document.addEventListener('DOMContentLoaded', function()
+                        {
+                            pyload.activated();
+                        });
+
+                        pyload.load_js(request.params.script_src, function() {
+
+                        window.addEventListener('load', function() {
+                            window.document.dispatchEvent(new Event("DOMContentLoaded", {
+                              bubbles: true,
+                              cancelable: true
+                            }));
+                        });
+
+
+                            window.dispatchEvent(new Event("load", {
+                              bubbles: true,
+                              cancelable: true
+                            }));
+                        });
+
+                    });
+
+                    pyload.load_js(browser.runtime.getURL('page-scripts/mutationObserver.js'), function () {
+                        window.dispatchEvent(new CustomEvent("pyload.mutationObserverRegistered"));
+                    });
+
+                    pyload.getFrameSize = function()
+                    {
+                        let rectIFrame =  {top: 0, right: 0, bottom: 0, left: 0},
+                            rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
+                            rect,
+                            iframe = document.body.querySelector("#puzzle-captcha iframe");
+
+                        if (iframe !== null && pyload.isVisible(iframe))
+                        {
+                            rect = iframe.getBoundingClientRect();
+                            rectIFrame = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
+                        }
+
+                        var left = Math.floor(rectIFrame.left);
+                        var right = Math.ceil(rectIFrame.right);
+                        var top = Math.floor(rectIFrame.top);
+                        var bottom = Math.max(Math.ceil(rectIFrame.bottom));
+                        return {top: top, left: left, bottom: bottom, right: right};
+                    };
+                });
+            });
+"""
+
+    @classmethod
+    def get_browser_extension_permissions(cls):
+        return [
+            "*://cutcaptcha.com/*"
+        ]
 
 if __name__ == "__main__":
     # Sign with the command `python -m pyload.plugins.captcha.ReCaptcha

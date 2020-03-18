@@ -15,6 +15,7 @@ from ..cookie_jar import Cookie, CookieJar
 from datetime import datetime
 from dateutil import tz
 import re
+import math
 
 def myquote(url):
     try:
@@ -584,16 +585,25 @@ class HTTPRequest:
                         found = True
                         expires = datetime.fromtimestamp(float(expires))
                     if not found:
-                        found = True
                         matches = re.match(r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), ([0-9]{2})\-'
-                                           + r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\-([0-9]{4}) '
+                                           + r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\-((?:[0-9]{4}|[0-9]{2})) '
                                            + r'([0-9]{2}):([0-9]{2}):([0-9]{2}) ([A-Z]*)$', expires)
                         if matches:
                             found = True
                             weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                             months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
                             month_int = months.index(matches[3]) + 1
-                            expires = datetime(int(matches[4]), month_int, int(matches[2]), int(matches[5]), int(matches[6]), int(matches[7]), 0, tz.gettz(matches[8]))
+                            if len(matches[4]) == 2:
+                                current_year = datetime.now().year
+                                current_century = math.floor(current_year / 100)
+                                if ((current_century * 100) + int(matches[4])) < current_year:
+                                    year = ((current_century+1) * 100) + int(matches[4])
+                                else:
+                                    year = (current_century * 100) + int(matches[4])
+                            else:
+                                year = int(matches[4])
+
+                            expires = datetime(year, month_int, int(matches[2]), int(matches[5]), int(matches[6]), int(matches[7]), 0, tz.gettz(matches[8]))
                         if found:
                             if expires < datetime.now(tz.tzlocal()):
                                 is_expired = True

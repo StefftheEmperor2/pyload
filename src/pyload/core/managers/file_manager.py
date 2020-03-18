@@ -138,7 +138,7 @@ class FileManager:
         self.pyload.thread_manager.create_info_thread(data, package)
 
         # TODO: change from reload_all event to package update event
-        self.pyload.file_manager.get_package(package).notify_update()
+        self.pyload.file_manager.get_package(package).notify_change()
 
     # ----------------------------------------------------------------------
     @lock

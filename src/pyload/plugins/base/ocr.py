@@ -395,3 +395,7 @@ class BaseOCR(BasePlugin):
             result = task.result
 
         return result
+
+    @classmethod
+    def get_interactive_script(cls):
+        return None

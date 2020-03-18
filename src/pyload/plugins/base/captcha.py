@@ -221,3 +221,7 @@ class BaseCaptcha(BasePlugin):
         self.log_info(self._("Correct captcha"), self.task.result)
         self.task.correct()
         self.task = None
+
+    @classmethod
+    def get_interactive_script(cls):
+        return None

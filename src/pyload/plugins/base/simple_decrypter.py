@@ -96,11 +96,10 @@ class SimpleDecrypter(BaseDecrypter):
     def api_info(cls, url):
         return {}
 
-    @classmethod
-    def get_info(cls, url="", html=""):
-        info = super(SimpleDecrypter, cls).get_info(url)
+    def get_info(self, url="", html="", cookie_jar=None):
+        info = super().get_info(url=url, html=html, cookie_jar=cookie_jar)
 
-        info.update(cls.api_info(url))
+        info.update(self.api_info(url))
 
         if not html and info["status"] != 2:
             if not url:
@@ -109,7 +108,7 @@ class SimpleDecrypter(BaseDecrypter):
 
             elif info["status"] in (3, 7):
                 try:
-                    html = get_url(url, cookies=cls.COOKIES, decode=cls.TEXT_ENCODING)
+                    html = self.load(url, cookies=self.COOKIES, decode=self.TEXT_ENCODING)
 
                 except BadHeader as exc:
                     info["error"] = "{}: {}".format(exc.code, exc.content)
@@ -118,23 +117,23 @@ class SimpleDecrypter(BaseDecrypter):
                     pass
 
         if html:
-            if cls.OFFLINE_PATTERN and re.search(cls.OFFLINE_PATTERN, html) is not None:
+            if self.OFFLINE_PATTERN and re.search(self.OFFLINE_PATTERN, html) is not None:
                 info["status"] = 1
 
             elif (
-                cls.TEMP_OFFLINE_PATTERN
-                and re.search(cls.TEMP_OFFLINE_PATTERN, html) is not None
+                self.TEMP_OFFLINE_PATTERN
+                and re.search(self.TEMP_OFFLINE_PATTERN, html) is not None
             ):
                 info["status"] = 6
 
-            elif cls.NAME_PATTERN:
-                m = re.search(cls.NAME_PATTERN, html)
+            elif self.NAME_PATTERN:
+                m = re.search(self.NAME_PATTERN, html)
                 if m is not None:
                     info["status"] = 2
                     info["pattern"].update(m.groupdict())
 
         if "N" in info["pattern"]:
-            name = replace_patterns(info["pattern"]["N"], cls.NAME_REPLACEMENTS)
+            name = replace_patterns(info["pattern"]["N"], self.NAME_REPLACEMENTS)
             info["name"] = parse_name(name)
 
         return info
@@ -174,7 +173,7 @@ class SimpleDecrypter(BaseDecrypter):
             return
 
         self.data = self.load(
-            self.pyfile.url, cookies=self.COOKIES, ref=False, decode=self.TEXT_ENCODING
+            self.pyfile.url, cookies=self.COOKIES, referer=False, decode=self.TEXT_ENCODING
         )
 
     def _prepare(self):
@@ -187,8 +186,6 @@ class SimpleDecrypter(BaseDecrypter):
 
         if self.LOGIN_ACCOUNT and not self.account:
             self.fail(self._("Required account not found"))
-
-        self.req.set_option("timeout", 120)
 
         if self.LINK_PATTERN:
             if self.LINK_FREE_PATTERN is None:

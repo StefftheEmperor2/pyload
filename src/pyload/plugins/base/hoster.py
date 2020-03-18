@@ -45,7 +45,7 @@ class BaseHoster(BasePlugin):
 
     URL_REPLACEMENTS = []
 
-    def get_info(self, url="", html="", cookie_jar = None):
+    def get_info(self, url="", html="", cookie_jar=None):
         url = fixurl(url, unquote=True)
         info = {
             "name": parse.name(url),

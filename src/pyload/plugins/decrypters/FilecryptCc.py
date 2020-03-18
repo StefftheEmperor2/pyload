@@ -365,3 +365,21 @@ class FilecryptCc(BaseDecrypter):
                 return exc.content
             else:
                 raise
+
+    @classmethod
+    def get_browser_extension_permissions(cls):
+        return [
+            "*://filecrypt.cc/*",
+            "*://www.filecrypt.cc/*",
+            "*://filecrypt.co/*",
+            "*://www.filecrypt.co/*",
+        ]
+
+    @classmethod
+    def get_browser_extension_matches(cls):
+        return [
+            "*://filecrypt.cc/*",
+            "*://filecrypt.co/*",
+            "*://www.filecrypt.cc/*",
+            "*://www.filecrypt.co/*"
+        ]

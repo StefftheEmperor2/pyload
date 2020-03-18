@@ -415,6 +415,14 @@ class BasePlugin:
             else:
                 return html
 
+    @classmethod
+    def get_browser_extension_permissions(cls):
+        return []
+
+    @classmethod
+    def get_browser_extension_matches(cls):
+        return []
+
     def dump_html(self):
         frame = inspect.currentframe()
 
