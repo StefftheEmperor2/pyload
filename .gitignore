@@ -222,3 +222,8 @@ dmypy.json
 
 #pyCharm project setting
 .idea
+
+#Browser Extension Stuff
+src/pyload/BrowserExtensions/mozilla/captcha.js
+src/pyload/BrowserExtensions/mozilla/manifest.json
+src/pyload/BrowserExtensions/mozilla/plugins.hash

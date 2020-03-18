@@ -93,6 +93,7 @@ class PluginManager:
         return m.hexdigest()
 
     def build_browser_extensions(self, permissions, matches, captchas):
+        self.pyload.log.info("Rebuilding browser extensions")
         browser_extension_dir = os.path.join(PKGDIR, "BrowserExtensions/mozilla/")
         manifest_template_file = os.path.join(browser_extension_dir, 'manifest-template.json')
         manifest_file = os.path.join(browser_extension_dir, 'manifest.json')
