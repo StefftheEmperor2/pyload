@@ -98,6 +98,7 @@ function wrapWindow(text, after, whitelist) {
 		        }
 		    });
 			let window = revocableWindowProxy.proxy;
+			windowMockData.window = window;
 			let top = undefined;
 
             windowMockData['top'] = findTop(null, `+JSON.stringify(whitelist)+`);
@@ -108,6 +109,42 @@ function wrapWindow(text, after, whitelist) {
 	})();`;
 }
 
+function getPyloadMutationObserver()
+{
+    return `<script type="text/javascript">
+        (function()
+        {
+            let triggerCheckDocSize = function()
+            {
+                if (window.parent)
+                {
+                    window.parent.postMessage(JSON.stringify({"cmd": 'pyloadCheckDocSize'}), '*');
+                }
+            }
+            let observer = new MutationObserver(function(mutationsList)
+            {
+                triggerCheckDocSize();
+            });
+
+            window.addEventListener('load', function () {
+                let observerTarget = window.document.querySelector('body');
+                observer.observe(observerTarget,
+                {
+                    attributes:true,
+                    attributeOldValue:false,
+                    characterData:true,
+                    characterDataOldValue:false,
+                    childList:true,
+                    subtree:true
+                });
+            });
+
+            window.document.addEventListener('DOMDocumentLoaded', function () {
+                triggerCheckDocSize();
+            });
+        })();
+    </script>`;
+}
 function decodeChunks(chunkData, decoder)
 {
 	let str = '';
@@ -229,12 +266,15 @@ function cutcaptchaListener(details) {
                 after = '';
                 if (script.match(/var MetrikaLog = function MetrikaLog/))
                 {
-                    after = 'origWindow[\'MetrikaLog\'] = MetrikaLog';
+                    after = 'origWindow[\'MetrikaLog\'] = MetrikaLog; origWindow[\'MetrikaLoggingId\'] = MetrikaLoggingId;';
                 }
                 replacedStr += str.substring(lastEnd, match.index)+'<script>'+wrapWindow(match[1], after, ['cutcaptcha.com'])+'</script>';
                 lastEnd=match.index+match[0].length;
             }
             replacedStr+=str.substring(lastEnd);
+
+            replacedStr = replacedStr.replace('</head>', getPyloadMutationObserver()+'</head>');
+
             filter.write(encoder.encode(replacedStr));
 		}
 		else

@@ -17,28 +17,28 @@
 
 (function(localWindow) {
 	let methods = {
-		"recaptcha": function(request, gpyload)
+		"recaptcha": function(request, pyload)
 		{
 			while(document.children[0].childElementCount > 0)
 			{
 				document.children[0].removeChild(document.children[0].children[0]);
 			}
 			document.children[0].innerHTML = '<html><head></head><body style="display:inline-block;"><div id="captchadiv" style="display: inline-block;"></div></body></html>';
+            pyload.load_js(browser.runtime.getURL('page-scripts/mutationObserver.js'));
+			pyload.data.sitekey = request.params.sitekey;
 
-			gpyload.data.sitekey = request.params.sitekey;
-
-			gpyload.getFrameSize = function()
+			pyload.getFrameSize = function()
 			{
 				var rectAnchor =  {top: 0, right: 0, bottom: 0, left: 0},
 					rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
 					rect;
 				var anchor = document.body.querySelector("iframe[src*='/anchor']");
-				if (anchor !== null && gpyload.isVisible(anchor)) {
+				if (anchor !== null && pyload.isVisible(anchor)) {
 					rect = anchor.getBoundingClientRect();
 					rectAnchor = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
 				}
 				var popup = document.body.querySelector("iframe[src*='/bframe']");
-				if (popup !== null && gpyload.isVisible(popup)) {
+				if (popup !== null && pyload.isVisible(popup)) {
 					rect = popup.getBoundingClientRect();
 					rectPopup = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
 				}
@@ -68,7 +68,7 @@
                             js_script.async = true;
                             document.getElementsByTagName('head')[0].appendChild(js_script);
 					    });
-					    let event = new CustomEvent('pyload.setSiteKey', {"detail": gpyload.data.sitekey});
+					    let event = new CustomEvent('pyload.setSiteKey', {"detail": pyload.data.sitekey});
 					    window.dispatchEvent(event);
 
 					};
@@ -92,48 +92,89 @@
 			}
 
 		},
-		"cutcaptcha": function(request, gpyload)
+		"cutcaptcha": function(request, pyload)
 		{
-            gpyload.data.sitekey = request.params.sitekey;
-		    while(document.children[0].childElementCount > 0)
-		    {
-                document.children[0].removeChild(document.children[0].children[0]);
-            }
+            pyload.data.sitekey = request.params.sitekey;
 
-            document.children[0].innerHTML = '<html><head></head><body style="display:inline-block;">'
-                + '<div id="puzzle-captcha" aria-style="mobile"></div></body></html>';
+            window.dispatchEvent(new Event("beforeunload", {
+              bubbles: true,
+              cancelable: true
+            }));
 
-            gpyload.load_js(browser.runtime.getURL('page-scripts/cutcaptcha/replaceEventHandler.js'));
-            gpyload.eval_js(`var CUTCAPTCHA_MISERY_KEY = "`+gpyload.data.sitekey+`";
-                window.capResponseCallback = function(token) {
-                    let event = new CustomEvent("pyload.submitResponse", { "detail": response });
-                    window.dispatchEvent(event);
-                };`);
+            window.dispatchEvent(new Event("unload", {
+              bubbles: true,
+              cancelable: true
+            }));
 
-            gpyload.getFrameSize = function() {
-                var rectIFrame =  {top: 0, right: 0, bottom: 0, left: 0},
-                    rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
-                    rect;
-                var iframe = document.body.querySelector("#puzzle-captcha iframe");
-                if (iframe !== null && gpyload.isVisible(iframe))
-                {
-                    rect = iframe.getBoundingClientRect();
-                    rectIFrame = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
-                }
+            pyload.load_js(browser.runtime.getURL('page-scripts/deleteEventListeners.js'), function() {
+                pyload.load_js(browser.runtime.getURL('page-scripts/cleanupHtml.js'), function() {
+                pyload.eval_js('window.document.body.innerHTML = \'<div id="puzzle-captcha" aria-style="mobile"></div>\';');
+                    window.addEventListener('pyload.mutationObserverRegistered', function() {
 
-                var left = Math.floor(rectIFrame.left);
-                var right = Math.ceil(rectIFrame.right);
-                var top = Math.floor(rectIFrame.top);
-                var bottom = Math.ceil(rectIFrame.bottom);
-                return {top: top, left: left, bottom: bottom, right: right};
-            };
+                        pyload.eval_js(`var CUTCAPTCHA_MISERY_KEY = "`+pyload.data.sitekey+`";
+                            window.capResponseCallback = function(token) {
+                                let event = new CustomEvent("pyload.submitResponse", { "detail": token });
+                                window.dispatchEvent(event);
+                            };`);
 
-            debugger;
-            gpyload.activated();
+                        document.addEventListener('DOMContentLoaded', function()
+                        {
+                            pyload.activated();
+                        });
 
+                        pyload.load_js(request.params.script_src, function() {
+
+                        window.addEventListener('load', function() {
+                            window.document.dispatchEvent(new Event("DOMContentLoaded", {
+                              bubbles: true,
+                              cancelable: true
+                            }));
+                        });
+
+
+                            window.dispatchEvent(new Event("load", {
+                              bubbles: true,
+                              cancelable: true
+                            }));
+                        });
+
+                    });
+
+                    pyload.load_js(browser.runtime.getURL('page-scripts/mutationObserver.js'), function () {
+                        window.dispatchEvent(new CustomEvent("pyload.mutationObserverRegistered"));
+                    });
+
+                    pyload.getFrameSize = function()
+                    {
+                        let rectIFrame =  {top: 0, right: 0, bottom: 0, left: 0},
+                            rectPopup =  {top: 0, right: 0, bottom: 0, left: 0},
+                            rect,
+                            iframe = document.body.querySelector("#puzzle-captcha iframe");
+
+                        if (iframe !== null && pyload.isVisible(iframe))
+                        {
+                            rect = iframe.getBoundingClientRect();
+                            rectIFrame = {top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left};
+                        }
+
+                        var left = Math.floor(rectIFrame.left);
+                        var right = Math.ceil(rectIFrame.right);
+                        var top = Math.floor(rectIFrame.top);
+                        var bottom = Math.max(Math.ceil(rectIFrame.bottom));
+                        return {top: top, left: left, bottom: bottom, right: right};
+                    };
+                });
+            });
 
         }
 	};
+
+	var page_script = document.createElement('script');
+    page_script.type = "text/javascript";
+    page_script.src = browser.runtime.getURL('page-scripts/replaceEventHandler.js');
+    document.getElementsByTagName('head')[0].appendChild(page_script);
+    page_script.remove();
+
 	// this function listens to messages from the pyload main page
 	console.log('added message handler for pyload interactive captcha');
 	window.addEventListener('message', function(e) {
@@ -165,9 +206,9 @@
 					}
 				}
 
-				let cgpyload = function(paramData)
+				let cPyload = function(paramData)
 				{
-					let gpyload = this;
+					let pyload = this;
 					let cookieJar = null;
 					let frameSize = null;
 
@@ -182,8 +223,8 @@
 					};
 
 					this.submitResponse = function(response) {
-						if (typeof gpyload.observer !== 'undefined') {
-							gpyload.observer.disconnect();
+						if (typeof pyload.observer !== 'undefined') {
+							pyload.observer.disconnect();
 						}
 
 						console.log("Submitting response");
@@ -196,11 +237,13 @@
 					    console.log('captcha activated');
 						let responseMessage = {actionCode: "pyloadActivatedInteractive"};
 						parent.postMessage(JSON.stringify(responseMessage),"*");
+                        pyload.checkDocSize();
 					};
 
-					this.setSize = function(rect) {
-						if (gpyload.data.rectDoc.left !== rect.left || gpyload.data.rectDoc.right !== rect.right || gpyload.data.rectDoc.top !== rect.top || gpyload.data.rectDoc.bottom !== rect.bottom) {
-							gpyload.data.rectDoc = rect;
+					this.setSize = function(rect)
+					{
+						if (pyload.data.rectDoc.left !== rect.left || pyload.data.rectDoc.right !== rect.right || pyload.data.rectDoc.top !== rect.top || pyload.data.rectDoc.bottom !== rect.bottom) {
+							pyload.data.rectDoc = rect;
 							var responseMessage = {actionCode: "pyloadIframeSize", params: {rect: rect}};
 							parent.postMessage(JSON.stringify(responseMessage), "*");
 						}
@@ -226,12 +269,16 @@
 						return cookieJar
 					};
 
-					this.load_js = function(src)
+					this.load_js = function(src, callback)
 					{
                         var page_script = document.createElement('script');
                         page_script.type = "text/javascript";
+                        if (typeof callback !== 'undefined')
+                        {
+                            page_script.onload = callback;
+                        }
                         page_script.src = src;
-                        document.getElementsByTagName('head')[0].appendChild(page_script);
+                        window.document.getElementsByTagName('head')[0].appendChild(page_script);
                         page_script.remove();
 					}
 
@@ -244,26 +291,51 @@
                         page_script.remove();
 					}
 
+                    this.checkDocSize = function()
+                    {
+                        window.scrollTo(0,0);
+                        var rect = pyload.getFrameSize();
+                        if (rect !== null)
+                        {
+                            pyload.setSize(rect);
+                        }
+                    };
+
                     window.addEventListener('pyload.activated', function() {
-                        gpyload.activated();
+                        pyload.activated();
                     });
 
                     window.addEventListener('pyload.submitResponse', function(event) {
-                        gpyload.submitResponse(event.detail);
+                        pyload.submitResponse(event.detail);
                     });
 
+                    window.addEventListener('pyload.mutationObserved', function() {
+                        pyload.checkDocSize();
+                    });
+
+                    window.addEventListener('message', function(e) {
+                            try {
+                                var request = JSON.parse(e.data);
+                            } catch(e) {
+                                return
+                            }
+
+                            if (typeof request.cmd != 'undefined' && request.cmd == 'pyloadCheckDocSize')
+                            {
+                                pyload.checkDocSize();
+                            }
+                    });
 					this.data = paramData;
 				};
 
-				let gpyload = new cgpyload(
+				let pyload = new cPyload(
                 {
-                    debounceInterval: 1500,
                     rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
                 });
 
 				if (typeof request.params.method != 'undefined')
 				{
-					methods[request.params.method].call(window, request, gpyload);
+					methods[request.params.method].call(window, request, pyload);
 				}
 				else
 				{
@@ -275,21 +347,16 @@
 					}
 				}
 
-
-
-                var checkDocSize = function()
+                if (window.document.readyState == 'complete')
                 {
-                    window.scrollTo(0,0);
-                    var rect = gpyload.getFrameSize();
-                    gpyload.setSize(rect);
-                };
-
-                gpyload.observer = new MutationObserver(function(mutationsList) {
-                    checkDocSize();
-                });
-
-                gpyload.observer.observe(document.querySelector('body'), {
-                    attributes:true, attributeOldValue:false, characterData:true, characterDataOldValue:false, childList:true, subtree:true});
+                    pyload.checkDocSize();
+                }
+                else
+                {
+                    window.document.addEventListener('DOMContentLoaded', function() {
+                        pyload.checkDocSize();
+                    });
+                }
 
 			}
 		}
