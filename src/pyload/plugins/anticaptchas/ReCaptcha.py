@@ -5,7 +5,7 @@ import io
 import os
 import re
 import urllib.parse
-
+import json
 from PIL import Image, ImageDraw, ImageFont
 
 from ..base.captcha_service import CaptchaService
@@ -460,7 +460,6 @@ class ReCaptcha(CaptchaService):
             "url": self.pyfile.url,
             "sitekey": key,
             "securetoken": secure_token,
-            "method": 'recaptcha',
             "cookie_jar": None,
             "user_agent": user_agent,
             "cmd": 'pyloadCaptchaInteractive'

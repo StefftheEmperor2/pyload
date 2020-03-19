@@ -184,18 +184,14 @@
                     rectDoc: {top: 0, right: 0, bottom: 0, left: 0}
                 });
 
-				if (typeof request.params.method != 'undefined')
+				if (typeof request.params.captcha_plugin != 'undefined' && typeof methods[request.params.captcha_plugin] != 'undefined')
 				{
-					methods[request.params.method].call(window, request, pyload);
+					methods[request.params.captcha_plugin].call(window, request, pyload);
 				}
 				else
 				{
-					try {
-						eval(request.params.script.code);
-					} catch(err) {
-						console.error("pyLoad: Script aborted: " + err.name + ": " + err.message + " (" + err.stack +")");
+					console.error("pyLoad: Script not found: " + request.params.captcha_plugin);
 					return;
-					}
 				}
 
                 if (window.document.readyState == 'complete')

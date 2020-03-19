@@ -42,9 +42,9 @@ class PluginManager:
 
         self.plugins = {}
         self.create_index()
-        self.create_browser_extensions()
         # register for import addon
         sys.meta_path.append(self)
+        self.create_browser_extensions()
 
     def create_browser_extensions(self):
         permissions = []
@@ -52,12 +52,12 @@ class PluginManager:
         captchas = {}
 
         for crypter_info in self.crypter_plugins.values():
-            crypter = self.load_class('decrypter', crypter_info['name'])
+            crypter = self.load_class('decrypter', crypter_info['name'], from_userdir=crypter_info['user'])
             permissions.extend(crypter.get_browser_extension_permissions())
             matches.extend(crypter.get_browser_extension_matches())
 
         for captcha_info in self.captcha_plugins.values():
-            captcha_plugin = self.load_class('anticaptcha', captcha_info['name'])
+            captcha_plugin = self.load_class('anticaptcha', captcha_info['name'], from_userdir=captcha_info['user'])
             interactive_script = captcha_plugin.get_interactive_script()
             permissions.extend(captcha_plugin.get_browser_extension_permissions())
             matches.extend(captcha_plugin.get_browser_extension_matches())
@@ -163,10 +163,9 @@ class PluginManager:
 
         self.pyload.log.debug("Indexing plugins...")
 
-        sys.path.append(os.path.join(self.pyload.userdir, "plugins"))
-
         userplugins_dir = os.path.join(self.pyload.userdir, "plugins")
         os.makedirs(userplugins_dir, exist_ok=True)
+        sys.path.append(self.pyload.userdir)
 
         try:
             fp = open(os.path.join(userplugins_dir, "__init__.py"), mode="wb")
@@ -408,7 +407,7 @@ class PluginManager:
         if "new_module" in plugin and not original:
             return plugin["new_module"]
 
-        return self.load_module(type, name)
+        return self.load_module(type, name, from_userdir=plugin['user'])
 
     def get_plugin_name(self, name):
         """
@@ -453,11 +452,11 @@ class PluginManager:
             self.pyload.log.debug(f"Plugin {name} not found")
             self.pyload.log.debug(f"Available plugins : {plugins}")
 
-    def load_class(self, module_type, name):
+    def load_class(self, module_type, name, from_userdir=False):
         """
         Returns the class of a plugin with the same name.
         """
-        module = self.load_module(module_type, name)
+        module = self.load_module(module_type, name, from_userdir=from_userdir)
         if module:
             return getattr(module, name)
 
@@ -490,25 +489,25 @@ class PluginManager:
                 if user and not self.plugins[type][name]["user"]:
                     return self
 
-    def load_module(self, module_type, name, replace=True):
+    def load_module(self, module_type, name, replace=True, from_userdir=False):
         if replace:
             if self.ROOT in name:
-                newname = name.replace(self.ROOT, self.USERROOT)
+                newname = name.replace(self.ROOT, '')
             elif self.USERROOT in name:
-                newname = name.replace(self.USERROOT, self.ROOT)
-            else:
-                if module_type == 'addon':
-                    module_type = 'addons'
-                elif module_type == 'account':
-                    module_type = 'accounts'
-                elif module_type == 'decrypter':
-                    module_type = 'decrypters'
-                elif module_type == 'downloader':
-                    module_type = 'downloaders'
-                elif module_type == 'anticaptcha':
-                    module_type = 'anticaptchas'
+                newname = name.replace(self.USERROOT, '')
 
-                newname = self.ROOT + module_type + '.' + name
+            if module_type == 'addon':
+                module_type = 'addons'
+            elif module_type == 'account':
+                module_type = 'accounts'
+            elif module_type == 'decrypter':
+                module_type = 'decrypters'
+            elif module_type == 'downloader':
+                module_type = 'downloaders'
+            elif module_type == 'anticaptcha':
+                module_type = 'anticaptchas'
+
+            newname = (self.USERROOT if from_userdir else self.ROOT) + module_type + '.' + name
         else:
             newname = name
 

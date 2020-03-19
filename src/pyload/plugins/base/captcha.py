@@ -2,6 +2,7 @@
 import base64
 import os
 import time
+import json
 
 from .plugin import BasePlugin
 
@@ -204,7 +205,8 @@ class BaseCaptcha(BasePlugin):
                 ).format(timeout)
             )
 
-        return {"result": result, "cookie_jar": cookie_jar}
+        result_decoded = json.loads(result)
+        return {"result": result_decoded['data'], "cookie_jar": cookie_jar}
 
     def invalid(self, msg=""):
         if not self.task:

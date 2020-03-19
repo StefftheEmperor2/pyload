@@ -186,7 +186,7 @@ class HTTPRequestHeader:
         self.value = value
 
 
-class HTTPRequestHeaderStore:
+class HTTPHeaderStore:
     def __init__(self):
         self._store = {}
 
@@ -207,6 +207,9 @@ class HTTPRequestHeaderStore:
 
     def get_header_at(self, index):
         return list(self._store.values())[index]
+
+    def has_key(self, key):
+        return key in self._store
 
     def get_list(self):
         list = []
@@ -234,12 +237,36 @@ class HTTPRequestHeaderStore:
     def set(self, key, value):
         self[key] = value
 
+    @classmethod
+    def factory_by_raw_header(cls, header):
+        instance = cls()
+        header_lines = header.splitlines()
+        for header_line in header_lines:
+            match = re.match(r"^\s*([a-zA-Z0-9\-_]*?)\s*:\s*([a-zA-Z0-9\-\._,\s:=/;:\"]*?)\s*$", header_line.decode('UTF-8'))
+            if match:
+                name = match[1].lower()
+                value = match[2]
+                if name is 'set-cookie':
+                    continue
+                instance.set(name, value)
+        return instance
+
+
+class HTTPRequestHeaderStore(HTTPHeaderStore):
+    pass
+
+
+class HTTPResponseHeaderStore(HTTPHeaderStore):
+    pass
+
+
 class HTTPResponse:
     def __init__(self):
         self._body = None
         self._code = None
         self._effective_url = None
         self._header = None
+        self._header_store = None
         self.cookie_jar = None
 
     @property
@@ -273,6 +300,11 @@ class HTTPResponse:
     @header.setter
     def header(self, header):
         self._header = header
+        self._header_store = HTTPResponseHeaderStore.factory_by_raw_header(header)
+
+    @property
+    def header_store(self):
+        return self._header_store
 
 class HTTPRequest:
     def __init__(self, cookies=None, options=None):
@@ -460,7 +492,10 @@ class HTTPRequest:
         """
         load and returns a given page.
         """
-        self.set_request_context(url, get, post, referer,
+        self.set_request_context(url,
+                                 get,
+                                 post,
+                                 referer,
                                  cookies=cookies,
                                  cookie_jar=cookie_jar,
                                  multipart=multipart,

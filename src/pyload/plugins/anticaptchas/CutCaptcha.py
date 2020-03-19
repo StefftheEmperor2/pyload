@@ -141,7 +141,6 @@ class CutCaptcha(CaptchaService):
         params = {
             "url": self.pyfile.url,
             "sitekey": key,
-            "method": 'cutcaptcha',
             "cookie_jar": self.pyfile.plugin.req.cookie_jar,
             "user_agent": user_agent,
             "script_src": script_src,
@@ -174,7 +173,7 @@ class CutCaptcha(CaptchaService):
 
             pyload.load_js(browser.runtime.getURL('page-scripts/deleteEventListeners.js'), function() {
                 pyload.load_js(browser.runtime.getURL('page-scripts/cleanupHtml.js'), function() {
-                pyload.eval_js('window.document.body.innerHTML = \'<div id="puzzle-captcha" aria-style="mobile"></div>\';');
+                pyload.eval_js('window.document.body.innerHTML = \\'<div id="puzzle-captcha" aria-style="mobile"></div>\\';');
                     window.addEventListener('pyload.mutationObserverRegistered', function() {
 
                         pyload.eval_js(`var CUTCAPTCHA_MISERY_KEY = "`+pyload.data.sitekey+`";
