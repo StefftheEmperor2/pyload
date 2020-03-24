@@ -403,7 +403,8 @@ class Core:
             for thread in self.thread_manager.threads:
                 thread.put("quit")
 
-            for pyfile in self.files.cache.values():
+            pyfiles = list(self.files.cache.values())
+            for pyfile in pyfiles:
                 pyfile.abort_download()
 
             self.addon_manager.core_exiting()

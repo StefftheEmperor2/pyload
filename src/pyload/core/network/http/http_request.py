@@ -246,7 +246,7 @@ class HTTPHeaderStore:
             if match:
                 name = match[1].lower()
                 value = match[2]
-                if name is 'set-cookie':
+                if name == 'set-cookie':
                     continue
                 instance.set(name, value)
         return instance

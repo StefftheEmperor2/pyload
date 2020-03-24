@@ -64,9 +64,9 @@ class Client:
 class UpdateEvent:
     def __init__(self, itype, iid, destination):
         if isinstance(destination, Destination):
-            if destination.value is Destination.COLLECTOR:
+            if destination.value == Destination.COLLECTOR:
                 destination = 'collector'
-            elif destination.value is Destination.QUEUE:
+            elif destination.value == Destination.QUEUE:
                 destination = 'queue'
         assert itype == "pack" or itype == "file"
         assert destination == "queue" or destination == "collector"

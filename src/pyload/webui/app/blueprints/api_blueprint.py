@@ -10,7 +10,7 @@ import flask
 from flask.json import jsonify
 
 from ..helpers import clear_session, login_required, set_session, parse_query
-
+from pyload.core.api import MethodNotExistsException
 bp = flask.Blueprint("api", __name__, url_prefix="/api")
 
 
@@ -34,11 +34,18 @@ def rpc(func, args=None):
         args = args.split(",")
     kwargs = {}
 
-    for x, y in chain(flask.request.args.items(), flask.request.form.items()):
+    try:
+        form_items = flask.request.form.items()
+    except Exception:
+        form_items = {}
+
+    for x, y in chain(flask.request.args.items(), form_items):
         kwargs = parse_query(kwargs, x, y)
 
     try:
         response = call_api(func, *args, **kwargs)
+    except MethodNotExistsException as exc:
+        response = "Not found", 404
     except Exception as exc:
         api.pyload.log.error(exc)
         response = jsonify(error=exc, traceback=traceback.format_exc()), 500
@@ -53,10 +60,13 @@ def call_api(func, *args, **kwargs):
         flask.flash(f"Invalid API call '{func}'")
         return "Forbidden", 403
 
-    result = getattr(api, func)(
-        *args,
-        **kwargs
-    )
+    if hasattr(api, func):
+        result = getattr(api, func)(
+            *args,
+            **kwargs
+        )
+    else:
+        raise MethodNotExistsException(func)
 
     # null is invalid json response
     return jsonify(result or True)

@@ -60,13 +60,13 @@ class Websocket:
             while active_connection.has_event():
                 event = active_connection.pop_event()
                 try:
-                    if len(event) is 4 and event[:3] == ('update', 'queue', 'file'):
+                    if len(event) == 4 and event[:3] == ('update', 'queue', 'file'):
                         file = self.core.file_manager.get_file(event[3])
                         await active_connection.write('update_queue_file', file.get_json())
-                    elif len(event) is 4 and event[:3] == ('update', 'queue', 'pack'):
+                    elif len(event) == 4 and event[:3] == ('update', 'queue', 'pack'):
                         package = self.core.file_manager.get_package(event[3])
                         await active_connection.write('update_queue_pack', package.get_json())
-                    elif len(event) is 1 and event[0] == 'core':
+                    elif len(event) == 1 and event[0] == 'core':
                         await active_connection.write('update_core', self.core.get_json())
                     else:
                         pass

@@ -102,13 +102,13 @@ class AddonManager:
         active = []
         deactive = []
 
-        for pluginname in self.pyload.plugin_manager.addon_plugins:
+        for plugin_name, plugin_info in self.pyload.plugin_manager.addon_plugins.items():
             try:
                 # addon_class = getattr(plugin, plugin.__name__)
 
-                if self.pyload.config.get_plugin(pluginname, "enabled"):
+                if self.pyload.config.get_plugin(plugin_name, "enabled"):
                     plugin_class = self.pyload.plugin_manager.load_class(
-                        "addon", pluginname
+                        "addon", plugin_name, plugin_info['user']
                     )
                     if not plugin_class:
                         continue
@@ -119,11 +119,11 @@ class AddonManager:
                     if plugin.is_activated():
                         active.append(plugin_class.__name__)
                 else:
-                    deactive.append(pluginname)
+                    deactive.append(plugin_name)
 
             except Exception as exc:
                 self.pyload.log.warning(
-                    self._("Failed activating {}").format(pluginname),
+                    self._("Failed activating {}").format(plugin_name),
                     exc_info=self.pyload.debug > 1,
                     stack_info=self.pyload.debug > 2,
                 )

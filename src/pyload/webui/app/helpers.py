@@ -2,7 +2,7 @@
 # AUTHOR: RaNaN, vuolter
 
 from functools import wraps
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, unquote
 
 import flask
 import flask_themes2
@@ -212,6 +212,6 @@ def parse_query(data, key, value):
         else:
             data[match.group(1)].append({match.group(2): parse_query({}, match.group(3), value)})
     else:
-        data[key] = value
+        data[key] = unquote(value)
 
     return data
