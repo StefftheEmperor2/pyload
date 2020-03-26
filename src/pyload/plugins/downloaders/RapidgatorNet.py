@@ -152,7 +152,7 @@ class RapidgatorNet(SimpleDownloader):
         url = "https://rapidgator.net{}".format(
             jsvars.get("captchaUrl", "/download/captcha")
         )
-        self.data = self.load(url, ref=pyfile.url)
+        self.data = self.load(url, referer=pyfile.url, cookie_jar=self.cookie_jar)
 
         m = re.search(self.LINK_FREE_PATTERN, self.data)
         if m is not None:
@@ -196,10 +196,7 @@ class RapidgatorNet(SimpleDownloader):
                 return captcha
 
     def get_json_response(self, url):
-        self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With: XMLHttpRequest"])
-
-        res = self.load(url, ref=self.pyfile.url)
-        self.req.http.c.setopt(pycurl.HTTPHEADER, ["X-Requested-With:"])
+        res = self.load(url, referer=self.pyfile.url, cookie_jar=self.cookie_jar, headers={'X-Requested-With': 'XMLHttpRequest'})
 
         if not res.startswith("{"):
             self.retry()

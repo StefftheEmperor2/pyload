@@ -153,7 +153,7 @@ class SimpleDownloader(BaseDownloader):
     def get_info(self, url="", html="", cookie_jar=None):
         if cookie_jar is None:
             cookie_jar = CookieJar.factory(self.COOKIES)
-        info = super(SimpleDownloader, self).get_info(url)
+        info = super(SimpleDownloader, self).get_info(url, cookie_jar=self.cookie_jar)
         info.update(self.api_info(url))
 
         if not html and info["status"] != 2:

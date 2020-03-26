@@ -53,8 +53,10 @@ class MultiDownloader(SimpleDownloader):
 
     # TODO: Recheck in 0.6.x
     def setup_base(self):
-        klass = self.pyload.plugin_manager.load_class("downloader", self.classname)
-        self.get_info = klass.get_info
+        if self.__type__ != 'downloader':
+            plugin_class = self.pyload.plugin_manager.load_class("downloader", self.classname)
+            self.downloader = plugin_class(self.pyfile)
+            self.get_info = self.downloader.get_info
 
         super().setup_base()
 

@@ -114,7 +114,7 @@ class BaseHoster(BasePlugin):
         else:
             hidden_user = "{:*<{}}".format(self.account.user[:3], 7)
             hidden_pw = "*" * 10
-            args = (
+            args = list(
                 a.replace(user, hidden_user).replace(pw, hidden_pw) for a in args if a
             )
 

@@ -175,7 +175,7 @@ class MultiAccount(BaseAccount):
         excluded = []
         self.supported = []
 
-        if self.plugintype == "hoster":
+        if self.plugintype == "downloader":
             plugin_map = {
                 name.lower(): name
                 for name in self.pyload.plugin_manager.hoster_plugins.keys()

@@ -56,9 +56,12 @@ def size(value, in_unit, out_unit):
         return out_size.value
 
     except AttributeError:
-        sizemap = {u[0]: i * 10 for i, u in enumerate(BYTE_PREFIXES)}
+        sizemap = {u: i * 10 for i, u in enumerate(BYTE_PREFIXES)}
 
         in_magnitude = sizemap[in_unit]
+
+        if out_unit == 'Byte':
+            out_unit = 'B'
         out_magnitude = sizemap[out_unit]
 
         magnitude = in_magnitude - out_magnitude

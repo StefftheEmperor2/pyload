@@ -33,7 +33,7 @@ class AlldebridCom(MultiAccount):
     def api_response(self, method, **kwargs):
         kwargs["agent"] = "pyLoad"
         kwargs["version"] = self.pyload.version
-        html = self.load(self.API_URL + method, get=kwargs)
+        html = self.load(self.API_URL + method, get=kwargs, cookie_jar=self.cookie_jar)
         return json.loads(html)
 
     def grab_hosters(self, user, password, data):

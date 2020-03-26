@@ -34,8 +34,8 @@ class RealdebridCom(MultiAccount):
 
     API_URL = "https://api.real-debrid.com/rest/1.0"
 
-    def api_response(self, namespace, get={}, post={}):
-        json_data = self.load(self.API_URL + namespace, get=get, post=post)
+    def api_response(self, namespace, get={}, post={}, cookie_jar=None):
+        json_data = self.load(self.API_URL + namespace, get=get, post=post, cookie_jar=cookie_jar)
 
         return json.loads(json_data)
 
@@ -44,7 +44,7 @@ class RealdebridCom(MultiAccount):
         return hosters
 
     def grab_info(self, user, password, data):
-        account = self.api_response("/user", args(auth_token=password))
+        account = self.api_response("/user", get=args(auth_token=password), cookie_jar=self.cookie_jar)
 
         validuntil = time.time() + account["premium"]
 
@@ -52,7 +52,7 @@ class RealdebridCom(MultiAccount):
 
     def signin(self, user, password, data):
         try:
-            account = self.api_response("/user", args(auth_token=password))
+            account = self.api_response("/user", args(auth_token=password), cookie_jar=self.cookie_jar)
 
         except BadHeader as exc:
             if exc.code == 401:

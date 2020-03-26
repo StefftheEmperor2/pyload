@@ -191,10 +191,13 @@ class HTTPHeaderStore:
         self._store = {}
 
     def __setitem__(self, name, value):
-        header = HTTPRequestHeader()
-        header.set_name(name)
-        header.set_value(value)
-        self._store[name] = header
+        if isinstance(value, HTTPRequestHeader):
+            self._store[name] = value
+        else:
+            header = HTTPRequestHeader()
+            header.set_name(name)
+            header.set_value(value)
+            self._store[name] = header
 
     def __getitem__(self, name):
         return self._store[name]
@@ -227,12 +230,15 @@ class HTTPHeaderStore:
     def add(self, other):
         if isinstance(other, HTTPRequestHeaderStore):
             for header in other:
-                self[header.get_name()] = header.get_value()
+                self[header.get_name()] = HTTPRequestHeader(header.get_name(), header.get_value())
         elif type(other) is list:
             for header in other:
                 if type(header) is dict:
-                    for k, v in header.items():
-                        self[k] = v
+                    for key, value in header.items():
+                        self[key] = HTTPRequestHeader(key, value)
+        elif type(other) is dict:
+            for key, value in other.items():
+                self[key] = HTTPRequestHeader(key, value)
 
     def set(self, key, value):
         self[key] = value

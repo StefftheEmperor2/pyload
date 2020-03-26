@@ -75,10 +75,20 @@ class BaseAccount(BasePlugin):
 
         #: Hide any user/password
         user = self.user
-        pw = self.info["login"]["password"]
-        hidden_user = "{:*<{}}".format(self.user[:3], 7)
+        pw = ''
+        if 'login' in self.info:
+            pw = self.info["login"]["password"]
+        hidden_user = ''
+        if self.user is not None:
+            hidden_user = "{:*<{}}".format(self.user[:3], 7)
         hidden_pw = "*" * 10
-        args = (a.replace(user, hidden_user).replace(pw, hidden_pw) for a in args if a)
+        if user and pw:
+            args = list((a.replace(user, hidden_user).replace(pw, hidden_pw) for a in args if a))
+        elif user:
+            args = list((a.replace(user, hidden_user) for a in args if a))
+        elif pw:
+            args = list((a.replace(pw, hidden_pw) for a in args if a))
+
 
         log(
             "{plugintype} {pluginname}: {msg}".format(
@@ -107,13 +117,11 @@ class BaseAccount(BasePlugin):
         raise NotImplementedError
 
     def login(self):
-        if not self.req:
+        if not self.cookie_jar:
             self.log_info(self._("Login user `{}`...").format(self.user))
         else:
             self.log_info(self._("Relogin user `{}`...").format(self.user))
             self.clean()
-
-        self.req = self.pyload.request_factory.get_request(self.classname, self.user)
 
         self.sync()
         self.setup()
@@ -338,7 +346,8 @@ class BaseAccount(BasePlugin):
             if options:
                 u["options"].update(options)
 
-            u["plugin"].relogin()
+            if 'plugin' in u:
+                u["plugin"].relogin()
 
         else:
             self.add(user, password, options)
