@@ -367,7 +367,7 @@ $(function() {
             listeners.push(listener)
         }
 
-        this.register_listener(this.event_handler)
+        this.register_listener(this.event_handler);
 
         var websocket_host = "{{websocket_host}}";
         if (websocket_host == '0.0.0.0' || websocket_host == '::1' || websocket_host == '::')
