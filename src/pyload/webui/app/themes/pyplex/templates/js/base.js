@@ -369,7 +369,12 @@ $(function() {
 
         this.register_listener(this.event_handler)
 
-        var websocket = new WebSocket("{{websocket_scheme}}://{{websocket_host}}:{{websocket_port}}/");
+        var websocket_host = "{{websocket_host}}";
+        if (websocket_host == '0.0.0.0' || websocket_host == '::1' || websocket_host == '::')
+        {
+            websocket_host = window.location.hostname;
+        }
+        var websocket = new WebSocket("{{websocket_scheme}}://"+websocket_host+":{{websocket_port}}/");
 
         websocket.onopen = function (event)
         {
