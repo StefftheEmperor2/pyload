@@ -74,7 +74,7 @@ class UserDatabaseMethods:
         )
         newpw = _salted_password(new_password, new_salt)
 
-        self.c.execute("UPDATE users SET password=? WHERE name=?", (newpw, user))
+        self.c.execute("UPDATE users SET password=? WHERE name=?", (new_salt+newpw, user))
         return True
 
     @style.async_

@@ -800,7 +800,7 @@ class CircleCaptcha(BaseOCR):
 
     #: Return coordinates of opened circle (eg (x, y))
     def decrypt_from_web(self, url):
-        file = io.BytesIO(urllib.request.urlopen(url).read())
+        file = io.BytesIO(self.load(url, cookie_jar=self.cookie_jar, referer=self.pyfile.url, decode=False))
         img = Image.open(file)
         self.img = img
         coords = self.decrypt(img)

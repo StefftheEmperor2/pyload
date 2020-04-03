@@ -2,9 +2,9 @@
 
 import os
 import re
+import magic
 
 from .plugin import BasePlugin
-
 
 class ArchiveError(Exception):
     """
@@ -41,6 +41,14 @@ class BaseExtractor(BasePlugin):
     ]
 
     EXTENSIONS = []
+    MIME_TYPE_EXTENSION_MAP = {
+        'application/zip': 'zip',
+        'application/x-rar-compressed': 'rar',
+        'application/x-tar': 'tar',
+        'application/vnd.ms-cab-compressed': 'cab',
+        'application/arj': 'arj',
+        'application/x-arj': 'arj',
+    }
     REPAIR = False
     VERSION = None
 
@@ -55,6 +63,11 @@ class BaseExtractor(BasePlugin):
         :return: Extension or None
         """
         name = os.path.basename(filename).lower()
+        if os.path.exists(filename):
+            guessed_ext = cls.mimetype_to_extension(magic.from_file(filename, mime=True))
+            if guessed_ext:
+                return guessed_ext
+
         for ext in cls.EXTENSIONS:
             if isinstance(ext, str):
                 if name.endswith("." + ext):
@@ -66,8 +79,21 @@ class BaseExtractor(BasePlugin):
         return None
 
     @classmethod
+    def mimetype_to_extension(cls, mimetype):
+        extension = None
+        if mimetype in cls.MIME_TYPE_EXTENSION_MAP:
+            extension = cls.MIME_TYPE_EXTENSION_MAP[mimetype]
+        return extension
+
+    @classmethod
     def isarchive(cls, filename):
         name = os.path.basename(filename).lower()
+
+        if os.path.exists(filename):
+            guessed_ext = cls.mimetype_to_extension(magic.from_file(filename, mime=True))
+            if guessed_ext in cls.EXTENSIONS:
+                return True
+
         for ext in cls.EXTENSIONS:
             if isinstance(ext, str):
                 if name.endswith("." + ext):

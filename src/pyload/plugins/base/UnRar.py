@@ -88,6 +88,8 @@ class UnRar(BaseExtractor):
             except OSError:
                 return False
 
+        if isinstance(out, bytes):
+            out = out.decode('UTF-8')
         m = cls._RE_VERSION.search(out)
         if m is not None:
             cls.VERSION = m.group(1)
