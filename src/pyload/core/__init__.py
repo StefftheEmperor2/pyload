@@ -165,10 +165,9 @@ class Core:
     def _init_database(self, restore):
         from .database import DatabaseThread
 
-        db_path = os.path.join(self.userdir, DatabaseThread.DB_FILENAME)
-        newdb = not os.path.isfile(db_path)
-
         self.db = DatabaseThread(self)
+        db_path = self.db.db_path
+        newdb = not os.path.isfile(db_path)
         self.db.setup()
 
         userpw = (self.DEFAULT_USERNAME, self.DEFAULT_PASSWORD)

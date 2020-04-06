@@ -939,6 +939,9 @@ class Api:
         if not p:
             raise PackageDoesNotExists(pid)
 
+        if isinstance(data, str):
+            data = json.loads(data)
+
         for key, value in data.items():
             if key == "id":
                 continue

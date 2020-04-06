@@ -100,9 +100,20 @@ class UnRar(BaseExtractor):
     def ismultipart(cls, filename):
         return cls._RE_PART.search(filename) is not None
 
+    @staticmethod
+    def strip_message(message):
+        if isinstance(message, bytes):
+            message = message.decode('UTF-8')
+        if isinstance(message, str):
+            message = message.strip()
+        else:
+            message = ''
+        return message
+
     def verify(self, password=None):
         p = self.call_cmd("l", "-v", self.filename, password=password)
-        out, err = (r.strip() if r else "" for r in p.communicate())
+
+        out, err = (self.strip_message(message) for message in p.communicate())
 
         if self._RE_BADPWD.search(err):
             raise PasswordError
@@ -144,6 +155,8 @@ class UnRar(BaseExtractor):
         s = ""
         while True:
             c = process.stdout.read(1)
+            if isinstance(c, bytes):
+                c = c.decode('UTF-8')
             #: Quit loop on eof
             if not c:
                 break
@@ -168,6 +181,8 @@ class UnRar(BaseExtractor):
         out, err = (r.strip() if r else "" for r in p.communicate())
 
         if err:
+            if isinstance(err, bytes):
+                err = err.decode('UTF-8')
             if self._RE_BADPWD.search(err):
                 raise PasswordError
 

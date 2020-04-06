@@ -174,7 +174,7 @@ function File(package, file)
         $div.addClass("child");
         $div.html($html);
 
-        $li.data("lid", file.id);
+        $li.data("lid", file.fid);
         $li.append($div);
         $ul.append($li);
 

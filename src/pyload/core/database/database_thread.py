@@ -107,7 +107,7 @@ class DatabaseThread(Thread):
         datadir = os.path.join(self.pyload.userdir, "data")
         os.makedirs(datadir, exist_ok=True)
 
-        self.db_path = os.path.join(datadir, self.DB_FILENAME)
+        self._db_path = os.path.join(datadir, self.DB_FILENAME)
         self.version_path = os.path.join(datadir, self.VERSION_FILENAME)
 
         self.jobs = Queue()
@@ -302,6 +302,10 @@ class DatabaseThread(Thread):
     def unregister_sub(cls, klass):
         cls.subs.remove(klass)
 
+    @property
+    def db_path(self):
+        return self._db_path
+    
     def __getattr__(self, attr):
         for sub in DatabaseThread.subs:
             if hasattr(sub, attr):

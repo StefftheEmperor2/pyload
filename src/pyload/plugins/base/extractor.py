@@ -44,6 +44,7 @@ class BaseExtractor(BasePlugin):
     MIME_TYPE_EXTENSION_MAP = {
         'application/zip': 'zip',
         'application/x-rar-compressed': 'rar',
+        'application/x-rar': 'rar',
         'application/x-tar': 'tar',
         'application/vnd.ms-cab-compressed': 'cab',
         'application/arj': 'arj',

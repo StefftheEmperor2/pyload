@@ -142,7 +142,7 @@ def bytesize(text, from_unit=None):  # returns integer bytes
     # elif not re.match(_RE_SIZEFORMAT3, rawsize):
     # return 0  #: Unknown format
 
-    if from_unit is None:
+    if from_unit is None or from_unit == '':
         from_unit = m.group("U") or DEFAULT_UNIT
 
     size = float(rawsize)

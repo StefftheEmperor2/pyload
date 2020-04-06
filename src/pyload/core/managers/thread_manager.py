@@ -356,9 +356,12 @@ class ThreadManager:
                 thread = DecrypterThread(self, job)
 
     def get_limit(self, thread):
-        limit = thread.active.plugin.account.get_account_data(
-            thread.active.plugin.user
-        )["options"].get("limit_dl", ["0"])[0]
+        if thread.active is False:
+            limit = 0
+        else:
+            limit = thread.active.plugin.account.get_account_data(
+                thread.active.plugin.user
+            )["options"].get("limit_dl", ["0"])[0]
         return int(limit)
 
     # def cleanup(self):

@@ -137,22 +137,23 @@ class RapidgatorNet(SimpleDownloader):
         jsvars = dict(re.findall(self.JSVARS_PATTERN, self.data))
         self.log_debug(jsvars)
 
-        url = "https://rapidgator.net{}?fid={}".format(
-            jsvars.get("startTimerUrl", "/download/AjaxStartTimer"), jsvars["fid"]
-        )
-        jsvars.update(self.get_json_response(url))
+        if 'fid' in jsvars:
+            url = "https://rapidgator.net{}?fid={}".format(
+                jsvars.get("startTimerUrl", "/download/AjaxStartTimer"), jsvars["fid"]
+            )
+            jsvars.update(self.get_json_response(url))
 
-        self.wait(jsvars.get("secs", 180), False)
+            self.wait(jsvars.get("secs", 180), False)
 
-        url = "https://rapidgator.net{}?sid={}".format(
-            jsvars.get("getDownloadUrl", "/download/AjaxGetDownloadLink"), jsvars["sid"]
-        )
-        jsvars.update(self.get_json_response(url))
+            url = "https://rapidgator.net{}?sid={}".format(
+                jsvars.get("getDownloadUrl", "/download/AjaxGetDownloadLink"), jsvars["sid"]
+            )
+            jsvars.update(self.get_json_response(url))
 
-        url = "https://rapidgator.net{}".format(
-            jsvars.get("captchaUrl", "/download/captcha")
-        )
-        self.data = self.load(url, referer=pyfile.url, cookie_jar=self.cookie_jar)
+            url = "https://rapidgator.net{}".format(
+                jsvars.get("captchaUrl", "/download/captcha")
+            )
+            self.data = self.load(url, referer=pyfile.url, cookie_jar=self.cookie_jar)
 
         m = re.search(self.LINK_FREE_PATTERN, self.data)
         if m is not None:
@@ -202,3 +203,15 @@ class RapidgatorNet(SimpleDownloader):
             self.retry()
         self.log_debug(url, res)
         return json.loads(res)
+
+    @classmethod
+    def get_browser_extension_permissions(cls):
+        return [
+            "*://rapidgator.net/file/*"
+        ]
+
+    @classmethod
+    def get_browser_extension_matches(cls):
+        return [
+            "*://rapidgator.net/file/*"
+        ]

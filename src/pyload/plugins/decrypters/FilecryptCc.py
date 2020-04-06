@@ -70,7 +70,7 @@ class FilecryptCc(BaseDecrypter):
 
 
     def decrypt(self, pyfile):
-        self.data = self._filecrypt_load_url(pyfile.url)
+        self.data = self._filecrypt_load_url(pyfile.url, cookie_jar=self.cookie_jar)
 
         if "content notfound" in self.data:  # NOTE: "content notfound" is NOT a typo
             self.offline()
@@ -108,7 +108,7 @@ class FilecryptCc(BaseDecrypter):
         self.log_info(self._("Found {} mirrors").format(len(mirror)))
 
         for i in mirror[1:]:
-            self.site_with_links = self.site_with_links + self._filecrypt_load_url(i)
+            self.site_with_links = self.site_with_links + self._filecrypt_load_url(i, cookie_jar=self.cookie_jar)
 
     def handle_password_protection(self):
         if (
@@ -193,11 +193,16 @@ class FilecryptCc(BaseDecrypter):
             captcha_key = cutcaptcha.detect_key()
 
             if captcha_key:
-                response, challenge = cutcaptcha.challenge(captcha_key)
+                response = cutcaptcha.challenge(captcha_key)
 
-                return self._filecrypt_load_url(
-                    url, post={"g-recaptcha-response": response}
-                )
+                if 'result' in response:
+                    return self._filecrypt_load_url(
+                        url,
+                        post={"cap_token": response['result']},
+                        cookie_jar=self.cookie_jar
+                    )
+                else:
+                    return None
 
             else:
                 return None

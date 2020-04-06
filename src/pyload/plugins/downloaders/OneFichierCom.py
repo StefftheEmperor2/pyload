@@ -67,8 +67,7 @@ class OneFichierCom(SimpleDownloader):
         self.chunk_limit = -1 if self.premium else 1
         self.resume_download = True
 
-    @classmethod
-    def get_info(cls, url="", html=""):
+    def get_info(self, url="", html="", cookie_jar=None):
         redirect = url
         for i in range(10):
             try:
@@ -101,7 +100,7 @@ class OneFichierCom(SimpleDownloader):
                         }
 
                     else:
-                        info = super(OneFichierCom, cls).get_info(url, html)
+                        info = super(OneFichierCom, self).get_info(url, html)
 
                     break
 
