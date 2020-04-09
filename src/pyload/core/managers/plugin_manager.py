@@ -13,6 +13,8 @@ from itertools import chain
 from functools import reduce
 
 import semver
+import subprocess
+import shutil
 
 from pyload import APPID, PKGDIR
 
@@ -44,7 +46,9 @@ class PluginManager:
         self.create_index()
         # register for import addon
         sys.meta_path.append(self)
-        self.create_browser_extensions()
+
+        if core.config.get('browser_extension', 'enabled'):
+            self.create_browser_extensions()
 
     def create_browser_extensions(self):
         permissions = []
@@ -70,40 +74,66 @@ class PluginManager:
         permissions.sort()
         matches.sort()
 
-        browser_extension_dir = os.path.join(PKGDIR, "BrowserExtensions/mozilla")
-        hash_file = os.path.join(browser_extension_dir, 'plugins.hash')
+        browser_extension_dir = os.path.join(self.pyload.userdir, 'BrowserExtensions', 'mozilla')
+        hash_file = os.path.join(browser_extension_dir, 'extension.json')
         do_build_browser_extension = False
+        build = 0
+        extension_id = None
         if os.path.exists(hash_file):
-            hash = str(self.hash_browser_extension(permissions, matches, captchas))
-            if hash != self.file_get_contents(hash_file):
+            extension_data = None
+            with open(hash_file) as json_file_handle:
+                extension_data = json.load(json_file_handle)
+            build = extension_data['build']
+            extension_id = extension_data['extension_id']
+            extension_hash = str(self.hash_browser_extension(permissions, matches, captchas))
+            if extension_hash != extension_data['hash']:
                 do_build_browser_extension = True
         else:
             do_build_browser_extension = True
 
         if do_build_browser_extension:
-            self.build_browser_extensions(permissions, matches, captchas)
+            self.build_browser_extensions(permissions, matches, captchas, build+1, extension_id)
 
     def hash_browser_extension(self, permissions, matches, captchas):
         captcha_list = []
         for name, captcha in captchas.items():
-            captcha_list.append(name+'::'+captcha['version'])
+            captcha_list.append(name + '::' + captcha['version'])
         captcha_list.sort()
         m = hashlib.md5()
-        m.update(("".join(permissions)+"".join(matches)+"".join(captcha_list)).encode('UTF-8'))
+        m.update(("".join(permissions) + "".join(matches) + "".join(captcha_list)).encode('UTF-8'))
         return m.hexdigest()
 
-    def build_browser_extensions(self, permissions, matches, captchas):
+    def build_browser_extensions(self, permissions, matches, captchas, build, extension_id):
         self.pyload.log.info("Rebuilding browser extensions")
-        browser_extension_dir = os.path.join(PKGDIR, "BrowserExtensions/mozilla/")
+        browser_extension_dir = os.path.join(PKGDIR, 'BrowserExtensions', 'mozilla')
+        user_dir = self.pyload.userdir
+        browser_extension_output_dir = os.path.join(user_dir, 'BrowserExtensions', 'mozilla')
+        build_file_name = os.path.join(user_dir, 'build')
         manifest_template_file = os.path.join(browser_extension_dir, 'manifest-template.json')
-        manifest_file = os.path.join(browser_extension_dir, 'manifest.json')
-        with open(manifest_template_file) as f:
-            manifest = json.load(f)
+        with open(manifest_template_file) as json_file_handle:
+            manifest = json.load(json_file_handle)
 
         manifest['permissions'].extend(permissions)
         manifest['content_scripts'][0]['matches'].extend(matches)
-        manifest['version'] += '.'+str(int(time.time()))
-        with open(manifest_file, 'w') as json_file:
+        browser_specific_settings = {
+            'gecko': {}
+        }
+        if extension_id is not None:
+            browser_specific_settings['gecko']['id'] = extension_id
+
+        schema = 'https' if self.pyload.config.get('webui', 'use_ssl') else 'http'
+        domain = self.pyload.config.get('webui', 'public_domain') \
+            if self.pyload.config.get('webui', 'public_domain') \
+            else f"{self.pyload.config.get('webui', 'host')}:{self.pyload.config.get('webui', 'port')}"
+        browser_extension_base_path = f"{schema}://{domain}/browser_extension"
+        browser_specific_settings['gecko']['update_url'] = f"{browser_extension_base_path}/updates.json"
+        version = manifest['version'] + '.' + str(build)
+        manifest['version'] = version
+
+        browser_extension_versioned_output_dir = os.path.join(browser_extension_output_dir, version)
+        os.makedirs(browser_extension_versioned_output_dir, exist_ok=True)
+        manifest_output_file = os.path.join(browser_extension_versioned_output_dir, 'manifest.json')
+        with open(manifest_output_file, 'w') as json_file:
             json.dump(manifest, json_file)
 
         captcha_js_template_file = os.path.join(browser_extension_dir, 'captcha-template.js')
@@ -113,19 +143,119 @@ class PluginManager:
         for captcha_name, captcha_info in captchas.items():
             if not is_first:
                 captcha_interactive_scripts += ",\n"
-            captcha_interactive_scripts += "\t\t\""+captcha_name+"\": function(request, pyload) {\n\t\t\t" \
-                + captcha_info['script'] \
-                + "\n}"
+            captcha_interactive_scripts += "\t\t\"" + captcha_name + "\": function(request, pyload) {\n\t\t\t" \
+                                           + captcha_info['script'] \
+                                           + "\n}"
             is_first = False
 
-        captcha_js_file = os.path.join(browser_extension_dir, 'captcha.js')
-        self.file_put_contents(captcha_js_file, captcha_string.replace('%%%INTERACTIVE_SCRIPTS%%%', captcha_interactive_scripts))
-        self.file_put_contents(
-            os.path.join(
-                browser_extension_dir, 'plugins.hash'
-            ),
-            str(self.hash_browser_extension(permissions, matches, captchas)))
+        captcha_js_file = os.path.join(browser_extension_versioned_output_dir, 'captcha.js')
+        self.file_put_contents(captcha_js_file,
+                               captcha_string.replace('%%%INTERACTIVE_SCRIPTS%%%', captcha_interactive_scripts))
 
+        self.copy_browser_extension_files(
+            browser_extension_dir,
+            os.path.join(browser_extension_output_dir, version),
+            [
+                'captcha-template.js',
+                'manifest-template.json',
+            ]
+        )
+
+        path_to_web_ext = self.pyload.config.get('browser_extension', 'web_ext_path')
+        if not os.path.exists(path_to_web_ext):
+            path_to_web_ext = shutil.which(path_to_web_ext)
+
+        p = subprocess.Popen(
+            [
+                path_to_web_ext,
+                'sign',
+                f"--source-dir={browser_extension_versioned_output_dir}",
+                '--no-config-discovery',
+                '--channel=unlisted',
+                '--no-input=true',
+                f"--artifacts-dir={browser_extension_output_dir}",
+                f"--api-key={self.pyload.config.get('browser_extension', 'amo_jwt_issuer')}",
+                f"--api-secret={self.pyload.config.get('browser_extension', 'amo_jwt_secret')}"
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=browser_extension_versioned_output_dir
+        )
+        out, err = p.communicate()
+
+        match = re.search(re.compile(b"Extension ID: (\{[0-9a-f\-]*\})"), out)
+        file_match = re.search(re.compile(b"Downloaded:\n(?:\s*)([a-zA-Z0-9\.\-+_/\\: ]*)\n"), out)
+
+        if match and file_match:
+            extension_file_path = file_match[1].decode('UTF-8')
+            extension_id = match[1].decode('UTF-8')
+            browser_extension_hash = self.hash_browser_extension(permissions, matches, captchas)
+
+            with open(os.path.join(browser_extension_output_dir, 'extension.json'), 'w') as json_file:
+                json.dump({
+                    'hash': browser_extension_hash,
+                    'extension_id': extension_id,
+                    'version': version,
+                    'build': str(build)
+                }, json_file)
+
+            updates_file = os.path.join(browser_extension_output_dir, 'updates.json')
+            if os.path.exists(updates_file):
+                with open(updates_file, 'r') as json_file:
+                    updates = json.load(json_file)
+            else:
+                updates = {
+                    'addons': {
+                        extension_id: {
+                            'updates': []
+                        }
+                    }
+                }
+
+            extension_file_name = os.path.basename(extension_file_path)
+            updates['addons'][extension_id]['updates'].append({
+                'version': version,
+                'update_link': f"{browser_extension_base_path}/{extension_file_name}",
+                'update_hash': f"sha512:{self.get_sha512(extension_file_path)}"
+            })
+
+            with open(updates_file, 'w') as json_file:
+                json.dump(updates, json_file)
+
+
+        else:
+            self.pyload.log.error('Generating browser extension failed')
+
+    @staticmethod
+    def get_sha512(file):
+        # BUF_SIZE is totally arbitrary, change for your app!
+        buf_size = 65536  # lets read stuff in 64kb chunks!
+
+        sha512 = hashlib.sha512()
+        with open(file, 'rb') as f:
+            while True:
+                data = f.read(buf_size)
+                if not data:
+                    break
+
+                sha512.update(data)
+        return sha512.hexdigest()
+
+    @classmethod
+    def copy_browser_extension_files(cls, source, destination, blacklist=[], root=[]):
+        dir_list = os.listdir(os.path.join(source, *root))
+        for item in dir_list:
+            sub_item = os.path.join(*root, item)
+            if sub_item not in blacklist:
+                source_full_path = os.path.join(source, sub_item)
+                destination_full_path = os.path.join(destination, sub_item)
+                if os.path.isdir(source_full_path):
+                    os.makedirs(destination_full_path, exist_ok=True)
+                    new_root = root[:]
+                    new_root.append(item)
+                    cls.copy_browser_extension_files(source, destination, blacklist, new_root)
+                else:
+                    shutil.copyfile(source_full_path, destination_full_path)
 
     @staticmethod
     def file_get_contents(filename):
@@ -140,7 +270,6 @@ class PluginManager:
         fp = open(filename, "w")
         fp.write(content)
         fp.close()
-
 
     def create_index(self):
         """
@@ -239,7 +368,7 @@ class PluginManager:
         configs = {}
         for entry in os.listdir(pfolder):
             if (
-                os.path.isfile(os.path.join(pfolder, entry)) and entry.endswith(".py")
+                    os.path.isfile(os.path.join(pfolder, entry)) and entry.endswith(".py")
             ) and not entry.startswith("_"):
 
                 with open(os.path.join(pfolder, entry)) as data:
@@ -329,7 +458,7 @@ class PluginManager:
                 )
 
                 if isinstance(config, list) and all(
-                    isinstance(c, tuple) for c in config
+                        isinstance(c, tuple) for c in config
                 ):
                     config = {x[0]: x[1:] for x in config}
                 else:
@@ -360,9 +489,9 @@ class PluginManager:
 
         for url in urls:
             if type(url) not in (
-                str,
-                bytes,
-                memoryview,
+                    str,
+                    bytes,
+                    memoryview,
             ):  #: check memoryview (as py2 byffer)
                 continue
             found = False
@@ -373,9 +502,9 @@ class PluginManager:
                 continue
 
             for name, value in chain(
-                self.crypter_plugins.items(),
-                self.hoster_plugins.items(),
-                self.container_plugins.items(),
+                    self.crypter_plugins.items(),
+                    self.hoster_plugins.items(),
+                    self.container_plugins.items(),
             ):
                 if value["re"].match(url):
                     res.append((url, name))
@@ -469,7 +598,7 @@ class PluginManager:
     def find_module(self, fullname, path=None):
         # redirecting imports if necesarry
         if fullname.startswith(self.ROOT) or fullname.startswith(
-            self.USERROOT
+                self.USERROOT
         ):  #: os.seperate pyload plugins
             if fullname.startswith(self.USERROOT):
                 user = 1
@@ -479,7 +608,7 @@ class PluginManager:
             split = fullname.split(".")
             if len(split) != 4 - user:
                 return
-            type, name = split[2 - user : 4 - user]
+            type, name = split[2 - user: 4 - user]
 
             if type in self.plugins and name in self.plugins[type]:
                 # userplugin is a newer version

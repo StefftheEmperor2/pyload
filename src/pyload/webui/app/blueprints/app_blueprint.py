@@ -7,6 +7,7 @@ import operator
 import os
 import sys
 import time
+import re
 from urllib.parse import unquote
 from uuid import uuid1
 import flask
@@ -505,3 +506,19 @@ def info():
         "language": conf["general"]["language"]["value"],
     }
     return render_template("info.html", **context)
+
+@bp.route("/browser_extension/updates.json", endpoint=browser_extension_updates)
+def browser_extension_updates():
+    api = flask.current_app.config["PYLOAD_API"]
+    pyload = api.pyload
+    try:
+        flask.send_from_directory(os.path.join(pyload.userdir, 'BrowserExtensions', 'mozilla', 'updates.json'))
+    except FileNotFoundError:
+        flask.abort(404)
+
+@bp.route("/browser_extension/<extension>", endpoint=browser_extension)
+def browser_extension(extension):
+    if re.match(r"\.xpi$", extension):
+        api = flask.current_app.config["PYLOAD_API"]
+        pyload = api.pyload
+        file = os.path.join(pyload.userdir, 'BrowserExtensions', 'mozilla', extension)
