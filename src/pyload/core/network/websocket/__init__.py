@@ -46,7 +46,7 @@ class Websocket:
         except Exception as exc:
             if not isinstance(exc, asyncio.CancelledError):
                 self.core.log.error(exc)
-                await self.unregister(websocket)
+            await self.unregister(websocket)
 
     async def producer_handler(self, websocket, path):
         events = self.core.event_manager.get_events(self.event_manager_client_id)
@@ -76,7 +76,7 @@ class Websocket:
                 except Exception as exc:
                     if not isinstance(exc, asyncio.CancelledError):
                         self.core.log.error(exc)
-                        await self.unregister(websocket)
+                    await self.unregister(websocket)
 
 
     async def handler(self, websocket, path):
