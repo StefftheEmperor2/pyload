@@ -62,6 +62,10 @@ class MultiAccount(BaseAccount):
         (r"^0", "zero"),
     ]
 
+    PLUGIN_DOMAIN_MAP = [
+        ('googlecom', 'googledrivecom')
+    ]
+
     def init(self):
         self.need_reactivate = False
 
@@ -196,6 +200,10 @@ class MultiAccount(BaseAccount):
 
         for plugin in self.get_plugins():
             name = remove_chars(plugin, "-.")
+            for plugin_domain_map_name in self.PLUGIN_DOMAIN_MAP:
+                if plugin_domain_map_name[0] == name:
+                    name = plugin_domain_map_name[1]
+                    break
 
             if name in account_list:
                 excluded.append(plugin)

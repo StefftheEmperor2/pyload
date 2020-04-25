@@ -441,7 +441,7 @@ function Package(ui, id, ele)
         event.preventDefault();
         $("#pack_form").off("submit").submit(thisObject.savePackage);
 
-        $("#pack_id").val(id[0]);
+        $("#pack_id").val(id);
         $("#pack_name").val(name.text());
         $("#pack_folder").val(folder.text());
         $("#pack_pws").val(password.text());

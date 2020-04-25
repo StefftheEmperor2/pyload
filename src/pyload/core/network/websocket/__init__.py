@@ -40,11 +40,12 @@ class Websocket:
 
     async def consumer_handler(self, websocket, path):
         try:
-            async for message in websocket:
-                message_data = json_loads(message)
+            if not websocket.closed:
+                async for message in websocket:
+                    json_loads(message)
 
         except Exception as exc:
-            if not isinstance(exc, asyncio.CancelledError):
+            if not isinstance(exc, asyncio.CancelledError) and not isinstance(exc, websockets.exceptions.ConnectionClosedError):
                 self.core.log.error(exc)
             await self.unregister(websocket)
 
@@ -69,6 +70,10 @@ class Websocket:
                         await active_connection.write('update_queue_pack', package.get_json())
                     elif len(event) == 1 and event[0] == 'core':
                         await active_connection.write('update_core', self.core.get_json())
+                    elif len(event) == 5 and event[:3] == ('insert', 'collector', 'pack'):
+                        package = self.core.file_manager.get_package(event[4])
+                        if package is not None:
+                            await active_connection.write('update_queue_pack', package.get_json())
                     else:
                         pass
                 except websockets.exceptions.ConnectionClosedOK:

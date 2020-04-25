@@ -100,7 +100,11 @@ class PyPackage:
             else:
                 file_progress = file.progress
             progress += file_progress
-        return (progress / total) * 100
+        if total == 0:
+            progress_percent = None
+        else:
+            progress_percent = (progress / total) * 100
+        return progress_percent
 
     def get_downloaded_files(self):
         downloaded_files = 0
